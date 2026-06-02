@@ -197,31 +197,31 @@ npm run start
 
 ```text
 .
-├── docs/
-│   └── deploy/
-├── prisma/
-│   ├── migrations/
-│   ├── schema.prisma
-│   └── seed.ts
-├── public/
-├── src/
-│   ├── app/
-│   │   ├── matches/
-│   │   ├── players/
-│   │   ├── raffles/
-│   │   ├── ranking/
-│   │   ├── settings/
-│   │   └── stats/
-│   ├── components/
-│   │   ├── layout/
-│   │   └── ui/
-│   └── lib/
-│       ├── db/
-│       └── validations/
-├── .env.example
-├── ecosystem.config.cjs
-├── package.json
-└── README.md
++-- docs/
+�   +-- deploy/
++-- prisma/
+�   +-- migrations/
+�   +-- schema.prisma
+�   +-- seed.ts
++-- public/
++-- src/
+�   +-- app/
+�   �   +-- matches/
+�   �   +-- players/
+�   �   +-- raffles/
+�   �   +-- ranking/
+�   �   +-- settings/
+�   �   +-- stats/
+�   +-- components/
+�   �   +-- layout/
+�   �   +-- ui/
+�   +-- lib/
+�       +-- db/
+�       +-- validations/
++-- .env.example
++-- ecosystem.config.cjs
++-- package.json
++-- README.md
 ```
 
 Pontos importantes:
