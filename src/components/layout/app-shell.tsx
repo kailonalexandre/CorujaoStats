@@ -1,0 +1,14 @@
+import { AppSidebar } from "@/components/layout/app-sidebar";
+
+export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <div className="min-h-dvh bg-neutral-950 text-neutral-100">
+      <div className="min-h-dvh bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:32px_32px] md:flex">
+        <AppSidebar />
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}
