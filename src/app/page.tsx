@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BarChart3, ClipboardList, Dices, Medal, UserPlus } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { PlayerPhoto } from "@/components/ui/player-photo";
 import { SectionCard } from "@/components/ui/section-card";
@@ -26,9 +27,9 @@ function HighlightPlayer({
   suffix?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-md bg-white/[0.04] px-4 py-3">
-      <div>
-        <p className="text-sm text-neutral-400">{label}</p>
+    <div className="flex flex-col gap-4 rounded-md border border-white/8 bg-neutral-950/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-sm leading-5 text-neutral-400">{label}</p>
         {metric ? (
           <div className="mt-2 flex items-center gap-3">
             <PlayerPhoto name={metric.player.name} photoUrl={metric.player.photoUrl} size="sm" />
@@ -41,7 +42,7 @@ function HighlightPlayer({
           <p className="mt-2 text-sm text-neutral-500">Sem dados</p>
         )}
       </div>
-      <span className="shrink-0 text-lg font-semibold text-emerald-200">
+      <span className="self-start rounded-md border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-sm font-semibold tabular-nums text-emerald-200 sm:self-center">
         {metric ? `${metric.value}${suffix}` : "-"}
       </span>
     </div>
@@ -105,7 +106,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Visao inicial do Sortearor Times. Os indicadores serao alimentados pelo banco conforme jogadores, partidas e sorteios forem cadastrados."
+        description="Visao inicial do Sorteador Times. Os indicadores serao alimentados pelo banco conforme jogadores, partidas e sorteios forem cadastrados."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -132,12 +133,12 @@ export default async function DashboardPage() {
                 <Link
                   key={shortcut.href}
                   href={shortcut.href}
-                  className="flex h-14 items-center gap-3 rounded-md bg-white text-sm font-semibold text-neutral-950 transition hover:bg-emerald-200"
+                  className="flex min-h-14 items-center gap-3 rounded-md border border-white/10 bg-white px-4 text-sm font-semibold text-neutral-950 transition hover:border-emerald-200 hover:bg-emerald-200"
                 >
-                  <span className="ml-4 grid size-8 place-items-center rounded-md bg-neutral-950 text-white">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-md bg-neutral-950 text-white">
                     <Icon size={17} />
                   </span>
-                  <span>{shortcut.label}</span>
+                  <span className="min-w-0">{shortcut.label}</span>
                 </Link>
               );
             })}
@@ -148,17 +149,20 @@ export default async function DashboardPage() {
       <div className="mt-6">
         <SectionCard title="Jogadores do grupo" description="Fotos e iniciais usadas nos proximos sorteios, rankings e perfis.">
           {players.length === 0 ? (
-            <p className="text-sm text-neutral-400">Nenhum jogador cadastrado.</p>
+            <EmptyState
+              title="Nenhum jogador cadastrado"
+              description="Cadastre os jogadores para que as fotos aparecam nos sorteios, rankings, historico e perfis."
+            />
           ) : (
             <div className="flex flex-wrap gap-3">
               {players.slice(0, 8).map((player) => (
                 <Link
                   key={player.id}
                   href={`/players/${player.id}`}
-                  className="flex items-center gap-3 rounded-md bg-white/[0.04] px-3 py-2 transition hover:bg-white/8"
+                  className="flex min-w-0 items-center gap-3 rounded-md border border-white/8 bg-neutral-950/45 px-3 py-2 transition hover:border-emerald-400/30 hover:bg-white/8"
                 >
                   <PlayerPhoto name={player.name} photoUrl={player.photoUrl} size="sm" />
-                  <span className="text-sm font-medium text-white">{player.name}</span>
+                  <span className="truncate text-sm font-medium text-white">{player.name}</span>
                 </Link>
               ))}
             </div>

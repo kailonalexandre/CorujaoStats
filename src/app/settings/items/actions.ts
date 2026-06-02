@@ -15,11 +15,6 @@ export type GameItemFormState = {
   };
 };
 
-export const initialGameItemFormState: GameItemFormState = {
-  status: "idle",
-  message: "",
-};
-
 function parseGameItemForm(formData: FormData) {
   return gameItemSchema.safeParse({
     gameId: formData.get("gameId"),

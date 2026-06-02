@@ -22,12 +22,16 @@ export default function SettingsPage() {
           </p>
         </Link>
 
-        <SectionCard title="Jogos" description="Cadastro e manutencao de categorias ficarao integrados ao banco.">
-          <div className="flex items-center gap-3 text-sm text-neutral-300">
-            <Gamepad2 size={20} className="text-emerald-400" />
-            <span>PES, Mortal Kombat, CS:GO / CS2, Battlefield e novos jogos.</span>
-          </div>
-        </SectionCard>
+        <Link
+          href="/settings/games"
+          className="rounded-lg border border-white/10 bg-neutral-900 p-5 transition hover:border-emerald-400/60"
+        >
+          <Gamepad2 className="mb-4 text-emerald-400" size={24} />
+          <h2 className="text-base font-semibold text-white">Jogos</h2>
+          <p className="mt-2 text-sm leading-6 text-neutral-400">
+            Cadastre jogos para liberar itens e sorteios. PES, CS:GO, Mortal Kombat e mais.
+          </p>
+        </Link>
       </div>
     </div>
   );

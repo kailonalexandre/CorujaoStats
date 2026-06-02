@@ -40,6 +40,19 @@ type Assignment = {
   teamName?: string;
 };
 
+type BracketSlot = Assignment | null;
+
+type BracketMatch = {
+  id: string;
+  slots: [BracketSlot, BracketSlot];
+  byeWinner?: Assignment;
+};
+
+type BracketRound = {
+  label: string;
+  matches: BracketMatch[];
+};
+
 type RaffleResult =
   | {
       mode: "individual";
@@ -131,6 +144,73 @@ function typeLabel(type: GameItemType) {
   return labels[type];
 }
 
+function nextPowerOfTwo(value: number) {
+  if (value <= 1) {
+    return 1;
+  }
+
+  return 2 ** Math.ceil(Math.log2(value));
+}
+
+function getRoundLabel(roundIndex: number, totalRounds: number) {
+  if (totalRounds === 1) {
+    return "Final";
+  }
+
+  if (roundIndex === totalRounds - 1) {
+    return "Final";
+  }
+
+  if (roundIndex === totalRounds - 2) {
+    return "Semifinal";
+  }
+
+  if (roundIndex === totalRounds - 3) {
+    return "Quartas de final";
+  }
+
+  return `Fase ${roundIndex + 1}`;
+}
+
+function buildPesBracket(assignments: Assignment[]) {
+  const bracketSize = nextPowerOfTwo(assignments.length);
+  const totalRounds = Math.max(1, Math.log2(bracketSize));
+  let slots: BracketSlot[] = [
+    ...assignments,
+    ...Array.from({ length: bracketSize - assignments.length }, () => null),
+  ];
+  const rounds: BracketRound[] = [];
+
+  for (let roundIndex = 0; roundIndex < totalRounds; roundIndex += 1) {
+    const matches: BracketMatch[] = [];
+    const nextSlots: BracketSlot[] = [];
+
+    for (let index = 0; index < slots.length; index += 2) {
+      const slotA = slots[index] ?? null;
+      const slotB = slots[index + 1] ?? null;
+      const byeWinner =
+        roundIndex === 0 ? (slotA && !slotB ? slotA : !slotA && slotB ? slotB : undefined) : undefined;
+
+      matches.push({
+        id: `${roundIndex}-${index}`,
+        slots: [slotA, slotB],
+        byeWinner,
+      });
+
+      nextSlots.push(byeWinner ?? null);
+    }
+
+    rounds.push({
+      label: getRoundLabel(roundIndex, totalRounds),
+      matches,
+    });
+
+    slots = nextSlots;
+  }
+
+  return rounds;
+}
+
 function buildHistoryPayload(result: RaffleResult): SaveRaffleHistoryInput {
   if (result.mode === "teams") {
     return {
@@ -159,6 +239,116 @@ function buildHistoryPayload(result: RaffleResult): SaveRaffleHistoryInput {
       groupName: assignment.teamName,
     })),
   };
+}
+
+function PesBracketSlot({
+  assignment,
+  emptyTitle = "Bye",
+  emptyDescription = "Sem adversario",
+}: {
+  assignment: Assignment | null;
+  emptyTitle?: string;
+  emptyDescription?: string;
+}) {
+  if (!assignment) {
+    return (
+      <div className="flex min-h-14 items-center justify-between gap-3 rounded-md border border-dashed border-white/10 bg-neutral-950/60 px-3 py-2">
+        <span className="text-sm font-medium text-neutral-500">{emptyTitle}</span>
+        <span className="text-xs uppercase text-neutral-600">{emptyDescription}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-14 items-center justify-between gap-3 rounded-md bg-white/[0.04] px-3 py-2">
+      <div className="flex min-w-0 items-center gap-3">
+        <PlayerPhoto
+          name={assignment.player.name}
+          photoUrl={assignment.player.photoUrl}
+          size="sm"
+        />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold text-white">
+            {assignment.player.name}
+          </span>
+          <span className="block truncate text-xs text-neutral-500">
+            {assignment.player.nickname || "Sem apelido"}
+          </span>
+        </span>
+      </div>
+      <span className="shrink-0 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-200">
+        {assignment.item?.name ?? "Sem time"}
+      </span>
+    </div>
+  );
+}
+
+function PesBracket({ assignments }: { assignments: Assignment[] }) {
+  const rounds = buildPesBracket(assignments);
+
+  if (assignments.length === 1) {
+    return (
+      <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-4">
+        <p className="text-xs font-semibold uppercase text-emerald-200">Campeao direto</p>
+        <div className="mt-3">
+          <PesBracketSlot assignment={assignments[0]} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="rounded-md border border-white/10 bg-neutral-950/50 px-4 py-3">
+        <p className="text-sm text-neutral-300">
+          Chaveamento vertical com {assignments.length} jogadores. Quando faltar adversario,
+          o jogador avanca como bye.
+        </p>
+      </div>
+
+      <div className="grid gap-5">
+        {rounds.map((round, roundIndex) => (
+          <section key={round.label} className="relative rounded-lg border border-white/10 bg-white/[0.025] p-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-base font-semibold text-white">{round.label}</h3>
+              <span className="rounded-md bg-neutral-950 px-2 py-1 text-xs font-semibold text-neutral-400">
+                {round.matches.length} {round.matches.length === 1 ? "confronto" : "confrontos"}
+              </span>
+            </div>
+
+            <div className="grid gap-3">
+              {round.matches.map((match, matchIndex) => (
+                <div key={match.id} className="relative rounded-lg border border-white/10 bg-neutral-900 p-3">
+                  <div className="mb-3 flex items-center justify-between text-xs uppercase text-neutral-500">
+                    <span>Jogo {matchIndex + 1}</span>
+                    {match.byeWinner ? (
+                      <span className="text-emerald-300">Avanca direto</span>
+                    ) : roundIndex > 0 ? (
+                      <span>Aguardando vencedor</span>
+                    ) : (
+                      <span>Confronto</span>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <PesBracketSlot
+                      assignment={match.slots[0]}
+                      emptyTitle={roundIndex === 0 ? "Bye" : "Aguardando"}
+                      emptyDescription={roundIndex === 0 ? "Sem adversario" : "Vencedor anterior"}
+                    />
+                    <PesBracketSlot
+                      assignment={match.slots[1]}
+                      emptyTitle={roundIndex === 0 ? "Bye" : "Aguardando"}
+                      emptyDescription={roundIndex === 0 ? "Sem adversario" : "Vencedor anterior"}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
@@ -520,6 +710,8 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
                 ))}
               </div>
             </div>
+          ) : result.game.slug === "pes" ? (
+            <PesBracket assignments={result.assignments} />
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {result.assignments.map((assignment) => (

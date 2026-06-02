@@ -118,7 +118,7 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
 
   return (
     <form action={onSubmit} className="grid gap-6">
-      <section className="rounded-lg border border-white/10 bg-neutral-900 p-5">
+      <section className="rounded-lg border border-white/10 bg-neutral-900/85 p-4 shadow-sm shadow-black/30 sm:p-5">
         <h2 className="text-base font-semibold text-white">Jogo</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {games.map((game) => (
@@ -130,10 +130,10 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
                 setMessage(null);
               }}
               className={[
-                "rounded-lg border p-4 text-left transition",
+                "min-h-24 rounded-lg border p-4 text-left transition",
                 game.id === gameId
-                  ? "border-emerald-400 bg-emerald-500/10"
-                  : "border-white/10 bg-white/[0.03] hover:bg-white/8",
+                  ? "border-emerald-400 bg-emerald-500/10 shadow-sm shadow-emerald-950/30"
+                  : "border-white/10 bg-neutral-950/45 hover:border-white/20 hover:bg-white/8",
               ].join(" ")}
             >
               <span className="font-semibold text-white">{gameLabels[game.slug] ?? game.name}</span>
@@ -170,7 +170,7 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
         ) : null}
       </section>
 
-      <section className="rounded-lg border border-white/10 bg-neutral-900 p-5">
+      <section className="rounded-lg border border-white/10 bg-neutral-900/85 p-4 shadow-sm shadow-black/30 sm:p-5">
         <h2 className="text-base font-semibold text-white">Jogadores</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {players.map((player) => {
@@ -180,11 +180,11 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
                 key={player.id}
                 type="button"
                 onClick={() => togglePlayer(player.id)}
-                className={[
-                  "flex items-center gap-3 rounded-md border p-3 text-left transition",
+                  className={[
+                  "flex min-h-16 items-center gap-3 rounded-md border p-3 text-left transition",
                   selected
-                    ? "border-emerald-400 bg-emerald-500/10"
-                    : "border-white/10 bg-white/[0.03] hover:bg-white/8",
+                    ? "border-emerald-400 bg-emerald-500/10 shadow-sm shadow-emerald-950/20"
+                    : "border-white/10 bg-neutral-950/45 hover:border-white/20 hover:bg-white/8",
                 ].join(" ")}
               >
                 <PlayerPhoto name={player.name} photoUrl={player.photoUrl} size="sm" />
@@ -199,17 +199,19 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
         </div>
       </section>
 
-      <section className="rounded-lg border border-white/10 bg-neutral-900 p-5">
+      <section className="rounded-lg border border-white/10 bg-neutral-900/85 p-4 shadow-sm shadow-black/30 sm:p-5">
         <h2 className="text-base font-semibold text-white">Dados por jogador</h2>
         {selectedPlayers.length === 0 ? (
-          <p className="mt-3 text-sm text-neutral-400">Selecione jogadores para preencher os dados.</p>
+          <div className="mt-4 rounded-md border border-dashed border-white/15 bg-neutral-950/60 px-4 py-5 text-sm text-neutral-400">
+            Selecione jogadores para preencher os dados.
+          </div>
         ) : (
           <div className="mt-4 grid gap-4">
             {selectedPlayers.map((player) => {
               const prefix = `player-${player.id}`;
 
               return (
-                <div key={player.id} className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                <div key={player.id} className="rounded-lg border border-white/10 bg-neutral-950/45 p-4">
                   <div className="mb-4 flex items-center gap-3">
                     <PlayerPhoto name={player.name} photoUrl={player.photoUrl} size="sm" />
                     <h3 className="font-semibold text-white">{player.name}</h3>
@@ -267,8 +269,8 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
           className={[
             "rounded-md px-3 py-2 text-sm",
             message.status === "success"
-              ? "bg-emerald-500/10 text-emerald-200"
-              : "bg-red-500/10 text-red-200",
+              ? "border border-emerald-400/20 bg-emerald-500/10 text-emerald-200"
+              : "border border-red-400/20 bg-red-500/10 text-red-200",
           ].join(" ")}
         >
           {message.message}
@@ -278,7 +280,7 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex h-11 w-fit items-center gap-2 rounded-md bg-emerald-500 px-5 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-5 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70 sm:w-fit"
       >
         {isPending ? <Loader2 size={17} className="animate-spin" /> : <ClipboardPlus size={17} />}
         Registrar partida

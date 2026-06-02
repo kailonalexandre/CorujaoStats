@@ -59,21 +59,23 @@ export default async function MatchesPage() {
           ) : (
             <div className="grid gap-4">
               {recentMatches.map((match) => (
-                <article key={match.id} className="rounded-md bg-white/[0.04] p-4">
+                <article key={match.id} className="rounded-md border border-white/8 bg-neutral-950/45 p-4">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                    <div className="min-w-0">
                       <h2 className="text-base font-semibold text-white">{match.game.name}</h2>
                       <p className="text-sm text-neutral-400">
                         {match.date.toLocaleDateString("pt-BR")}
                         {match.description ? ` - ${match.description}` : ""}
                       </p>
                     </div>
-                    <span className="text-sm text-neutral-500">{match.players.length} jogadores</span>
+                    <span className="mt-2 w-fit rounded-md border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-neutral-300 sm:mt-0">
+                      {match.players.length} jogadores
+                    </span>
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {match.players.map((entry) => (
-                      <div key={entry.id} className="flex items-center gap-3 rounded-md bg-neutral-950/50 p-3">
+                      <div key={entry.id} className="flex items-center gap-3 rounded-md border border-white/8 bg-neutral-900/70 p-3">
                         <PlayerPhoto
                           name={entry.player.name}
                           photoUrl={entry.player.photoUrl}

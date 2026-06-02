@@ -1,8 +1,8 @@
-# AGENTS.md - Projeto Sortearor Times
+# AGENTS.md - Projeto Sorteador Times
 
 ## Objetivo do projeto
 
-O projeto **Sortearor Times** e uma aplicacao web para sorteio de times, personagens, mapas e registro de estatisticas de jogadores.
+O projeto **Sorteador Times** e uma aplicacao web para sorteio de times, personagens, mapas e registro de estatisticas de jogadores.
 
 O sistema deve substituir a versao antiga baseada em arrays fixos no codigo. A nova versao deve ser escalavel, com banco de dados, cadastro de jogadores, historico de partidas, ranking e estatisticas separadas por jogo.
 
@@ -597,3 +597,11 @@ Ordem recomendada:
 O sistema antigo usava arrays com listas de times/personagens. Na nova versao, isso deve ser substituido por dados cadastrados no banco de dados.
 
 O objetivo e que o usuario consiga cadastrar novos jogos, novos jogadores, novos mapas, novos personagens e novas estatisticas sem precisar alterar diretamente o codigo.
+
+## Agente especializado em UI/UX
+
+Quando a tarefa envolver interface, layout, experiência do usuário, responsividade, cores, componentes visuais, acessibilidade ou organização visual, leia também:
+
+docs/UI_UX_AGENT.md
+
+As regras desse arquivo devem ser seguidas junto com este AGENTS.md.

@@ -3,6 +3,7 @@ import type { Game, GameItem, GameItemType } from "@prisma/client";
 import { ImageIcon, Pencil } from "lucide-react";
 import { EditGameItemForm } from "@/app/settings/items/_components/edit-game-item-form";
 import { ToggleGameItemActiveButton } from "@/app/settings/items/_components/toggle-game-item-active-button";
+import { getGameItemTypeLabel } from "@/lib/game-item-labels";
 
 type GameItemCardProps = {
   item: GameItem & {
@@ -46,7 +47,7 @@ export function GameItemCard({ item, games, types }: GameItemCardProps) {
             </span>
           </div>
           <p className="mt-1 text-sm text-neutral-400">{item.game.name}</p>
-          <p className="mt-2 text-xs uppercase text-neutral-500">{item.type}</p>
+          <p className="mt-2 text-xs uppercase text-neutral-500">{getGameItemTypeLabel(item.type)}</p>
         </div>
       </div>
 

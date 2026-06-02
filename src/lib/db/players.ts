@@ -46,7 +46,9 @@ export async function createPlayer(data: PlayerInput) {
     data: {
       name: data.name,
       nickname: data.nickname || null,
+      age: data.age ?? null,
       photoUrl: data.photoUrl || null,
+      coverUrl: data.coverUrl || null,
       groupId: DEFAULT_GROUP_ID,
     },
   });
@@ -60,7 +62,9 @@ export async function updatePlayer(id: string, data: PlayerInput) {
     data: {
       name: data.name,
       nickname: data.nickname || null,
+      age: data.age ?? null,
       photoUrl: data.photoUrl || null,
+      coverUrl: data.coverUrl || null,
       groupId: DEFAULT_GROUP_ID,
     },
   });

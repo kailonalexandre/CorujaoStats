@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarDays, Crosshair, Gamepad2, Medal, Pencil, Trophy } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
 import { PlayerPhoto } from "@/components/ui/player-photo";
 import { SectionCard } from "@/components/ui/section-card";
 import { prisma } from "@/lib/db/prisma";
@@ -171,6 +170,28 @@ function StatBlock({ label, value }: { label: string; value: string }) {
   );
 }
 
+function HeroStat({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: typeof Gamepad2;
+}) {
+  return (
+    <div className="flex min-h-16 items-center gap-3 border-t border-white/10 px-4 py-3 md:border-l md:border-t-0">
+      <span className="grid size-9 shrink-0 place-items-center rounded-md border border-white/10 bg-white/5 text-emerald-300">
+        <Icon size={17} />
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-[11px] font-semibold uppercase text-neutral-500">{label}</p>
+        <p className="mt-1 truncate text-lg font-semibold text-white">{value}</p>
+      </div>
+    </div>
+  );
+}
+
 function HistoryList({ matches }: { matches: MatchPlayerWithRelations[] }) {
   if (matches.length === 0) {
     return <EmptyState title="Sem historico" description="Registre partidas para preencher esta lista." />;
@@ -255,32 +276,84 @@ export default async function PlayerProfilePage({
       : matches.filter((match) => match.match.game.slug === activeTab);
   const generalStats = getBaseStats(matches);
   const mostUsedItems = getMostUsedItems(activeMatches);
+  const totalGoals = sum(matches, "goals");
+  const totalKills = sum(matches, "kills");
+  const coverStyle = {
+    backgroundImage: player.coverUrl
+      ? `linear-gradient(90deg, rgba(10,10,10,0.92), rgba(10,10,10,0.55), rgba(10,10,10,0.92)), url(${player.coverUrl})`
+      : "linear-gradient(135deg, rgba(16,185,129,0.28), rgba(23,23,23,0.96) 45%, rgba(39,39,42,0.92))",
+  };
 
   return (
     <div>
-      <PageHeader
-        title="Perfil do jogador"
-        description="Resumo individual com estatisticas gerais, por jogo, historico e itens mais usados."
-        action={
-          <Link
-            href="/players"
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-white/10 px-4 text-sm font-medium text-neutral-200 transition hover:bg-white/8"
-          >
-            <ArrowLeft size={17} />
-            Voltar
-          </Link>
-        }
-      />
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Link
+          href="/players"
+          className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 transition hover:text-white"
+        >
+          <ArrowLeft size={16} />
+          Voltar ao roster
+        </Link>
+      </div>
 
-      <section className="mb-6 rounded-lg border border-white/10 bg-neutral-900 p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <PlayerPhoto name={player.name} photoUrl={player.photoUrl} size="xl" />
-          <div>
-            <h1 className="text-3xl font-semibold text-white">{player.name}</h1>
-            <p className="mt-2 text-sm text-neutral-400">
-              {player.nickname ? `@${player.nickname}` : "Sem apelido cadastrado"}
-            </p>
+      <section className="mb-8 overflow-hidden rounded-lg border border-white/10 bg-neutral-950">
+        <div className="relative min-h-[360px] bg-cover bg-center p-5 sm:p-8" style={coverStyle}>
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:52px_52px] opacity-30" />
+          <div className="relative flex flex-col gap-6 md:flex-row md:items-end">
+            <div className="flex justify-center md:w-56 md:justify-start">
+              <PlayerPhoto
+                name={player.name}
+                photoUrl={player.photoUrl}
+                size="xl"
+                className="size-40 border-2 border-white/15 ring-4 ring-neutral-950/80 sm:size-48"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1 pb-2 text-center md:text-left">
+              <div className="mb-3 inline-flex h-7 items-center rounded-sm border border-white/10 bg-white/8 px-3 text-[11px] font-bold uppercase text-neutral-300">
+                Player
+              </div>
+              <h1 className="text-4xl font-semibold text-white sm:text-5xl">{player.name}</h1>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm text-neutral-300 md:justify-start">
+                <span className="inline-flex items-center gap-2">
+                  <Medal size={16} className="text-emerald-300" />
+                  {player.nickname ? `@${player.nickname}` : "Sem apelido cadastrado"}
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <CalendarDays size={16} className="text-emerald-300" />
+                  {player.age ? `${player.age} anos` : "Idade nao informada"}
+                </span>
+              </div>
+            </div>
+
+            <div className="relative flex justify-center md:absolute md:right-6 md:top-6">
+              <Link
+                href="/players"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-white/10 bg-neutral-950/80 px-4 text-sm font-medium text-neutral-200 transition hover:bg-white/10"
+              >
+                <Pencil size={15} />
+                Editar
+              </Link>
+            </div>
           </div>
+        </div>
+
+        <div className="grid bg-neutral-900/90 md:grid-cols-4">
+          <HeroStat label="Partidas jogadas" value={String(generalStats.total)} icon={Gamepad2} />
+          <HeroStat label="Vitorias" value={String(generalStats.wins)} icon={Trophy} />
+          <HeroStat label="Saldo de gols" value={String(totalGoals)} icon={Medal} />
+          <HeroStat label="Kills" value={String(totalKills)} icon={Crosshair} />
+        </div>
+
+        <div className="flex gap-2 overflow-hidden border-t border-white/10 bg-slate-800/60 px-4 py-3">
+          {Array.from({ length: 18 }).map((_, index) => (
+            <span
+              key={index}
+              className="grid size-9 shrink-0 place-items-center rounded-sm border border-white/8 bg-white/[0.03] text-[10px] text-white/20"
+            >
+              {index + 1}
+            </span>
+          ))}
         </div>
       </section>
 

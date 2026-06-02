@@ -21,60 +21,78 @@ enum MatchResult {
   draw
 }
 
+enum PesMatchStage {
+  group
+  final
+  repechage
+}
+
 model Group {
-  id            String          @id @default(cuid())
+  id            String           @id @default(cuid())
   name          String
   players       Player[]
   matches       Match[]
   raffleHistory RaffleHistory[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  pesSessions   PesGameSession[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@map("groups")
 }
 
 model Player {
-  id            String          @id @default(cuid())
-  name          String
-  nickname      String?
-  photoUrl      String?
-  groupId       String?
-  group         Group?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  matchPlayers  MatchPlayer[]
-  raffleHistory RaffleHistory[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                           String               @id @default(cuid())
+  name                         String
+  nickname                     String?
+  age                          Int?
+  photoUrl                     String?
+  coverUrl                     String?
+  groupId                      String?
+  group                        Group?               @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  matchPlayers                 MatchPlayer[]
+  raffleHistory                RaffleHistory[]
+  pesParticipants              PesGameParticipant[]
+  pesStandings                 PesGameStanding[]
+  pesChampionSessions          PesGameSession[]     @relation("PesChampion")
+  pesRepechageChampionSessions PesGameSession[]     @relation("PesRepechageChampion")
+  pesMatchesAsPlayer1          PesGameMatch[]       @relation("PesMatchPlayer1")
+  pesMatchesAsPlayer2          PesGameMatch[]       @relation("PesMatchPlayer2")
+  pesMatchesWon                PesGameMatch[]       @relation("PesMatchWinner")
+  createdAt                    DateTime             @default(now())
+  updatedAt                    DateTime             @updatedAt
 
   @@index([groupId])
   @@map("players")
 }
 
 model Game {
-  id            String          @id @default(cuid())
+  id            String           @id @default(cuid())
   name          String
-  slug          String          @unique
+  slug          String           @unique
   description   String?
   items         GameItem[]
   matches       Match[]
   raffleHistory RaffleHistory[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  pesSessions   PesGameSession[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@map("games")
 }
 
 model GameItem {
-  id            String          @id @default(cuid())
-  gameId        String
-  game          Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  name          String
-  type          GameItemType
-  imageUrl      String?
-  active        Boolean         @default(true)
-  matchPlayers  MatchPlayer[]
-  raffleHistory RaffleHistory[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              String               @id @default(cuid())
+  gameId          String
+  game            Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name            String
+  type            GameItemType
+  imageUrl        String?
+  active          Boolean              @default(true)
+  matchPlayers    MatchPlayer[]
+  raffleHistory   RaffleHistory[]
+  pesParticipants PesGameParticipant[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   @@index([gameId, type, active])
   @@map("game_items")
@@ -144,4 +162,127 @@ model RaffleHistory {
   @@index([playerId])
   @@index([itemId])
   @@map("raffle_history")
+}
+
+model PesGameSession {
+  id                        String               @id @default(cuid())
+  name                      String               @default("PES")
+  gameId                    String
+  game                      Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  groupId                   String?
+  group                     Group?               @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  active                    Boolean              @default(true)
+  useRepechage              Boolean              @default(false)
+  matchIdCounter            Int                  @default(1)
+  championPlayerId          String?
+  championPlayer            Player?              @relation("PesChampion", fields: [championPlayerId], references: [id], onDelete: SetNull)
+  repechageChampionPlayerId String?
+  repechageChampionPlayer   Player?              @relation("PesRepechageChampion", fields: [repechageChampionPlayerId], references: [id], onDelete: SetNull)
+  groups                    PesGameGroup[]
+  participants              PesGameParticipant[]
+  matches                   PesGameMatch[]
+  standings                 PesGameStanding[]
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+
+  @@index([gameId, active])
+  @@index([groupId, active])
+  @@map("pes_game_sessions")
+}
+
+model PesGameGroup {
+  id           String         @id @default(cuid())
+  sessionId    String
+  session      PesGameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  stateGroupId String
+  letter       String
+  groupIndex   Int
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([sessionId, stateGroupId])
+  @@unique([sessionId, letter])
+  @@index([sessionId, groupIndex])
+  @@map("pes_game_groups")
+}
+
+model PesGameParticipant {
+  id          String         @id @default(cuid())
+  sessionId   String
+  session     PesGameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerId    String
+  player      Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  teamItemId  String?
+  teamItem    GameItem?      @relation(fields: [teamItemId], references: [id], onDelete: SetNull)
+  groupLetter String
+  groupIndex  Int
+  position    Int?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([sessionId, playerId])
+  @@index([sessionId, groupLetter])
+  @@index([playerId])
+  @@index([teamItemId])
+  @@map("pes_game_participants")
+}
+
+model PesGameMatch {
+  id             String         @id
+  sessionId      String
+  session        PesGameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  stage          PesMatchStage
+  round          Int
+  stateGroupId   String?
+  groupLetter    String?
+  groupIndex     Int?
+  matchIndex     Int
+  player1Id      String?
+  player1        Player?        @relation("PesMatchPlayer1", fields: [player1Id], references: [id], onDelete: SetNull)
+  player2Id      String?
+  player2        Player?        @relation("PesMatchPlayer2", fields: [player2Id], references: [id], onDelete: SetNull)
+  player1Name    String
+  player2Name    String
+  goals1         Int?
+  goals2         Int?
+  pen1           Int?
+  pen2           Int?
+  winnerPlayerId String?
+  winnerPlayer   Player?        @relation("PesMatchWinner", fields: [winnerPlayerId], references: [id], onDelete: SetNull)
+  draw           Boolean        @default(false)
+  isFinished     Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([sessionId, stage, round, matchIndex])
+  @@index([player1Id])
+  @@index([player2Id])
+  @@index([winnerPlayerId])
+  @@map("pes_game_matches")
+}
+
+model PesGameStanding {
+  id                String         @id @default(cuid())
+  sessionId         String
+  session           PesGameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerId          String
+  player            Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  groupLetter       String
+  position          Int
+  points            Int            @default(0)
+  wins              Int            @default(0)
+  draws             Int            @default(0)
+  losses            Int            @default(0)
+  goalsFor          Int            @default(0)
+  goalsAgainst      Int            @default(0)
+  goalDifference    Int            @default(0)
+  qualified         Boolean        @default(false)
+  repechageEligible Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([sessionId, playerId])
+  @@index([sessionId, groupLetter, position])
+  @@index([playerId])
+  @@map("pes_game_standings")
 }

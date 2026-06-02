@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "sortearor-times",
+      name: "sorteador-times",
       script: "npm",
       args: "run start",
       cwd: __dirname,

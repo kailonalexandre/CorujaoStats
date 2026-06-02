@@ -7,7 +7,7 @@ Base preparada para Node.js, PM2, Nginx e PostgreSQL.
 Crie `.env` no servidor com:
 
 ```bash
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/sortearor_times?schema=public"
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/Sorteador_times?schema=public"
 NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
 ```
 
@@ -23,7 +23,7 @@ npm run build
 ## PM2
 
 ```bash
-pm2 start npm --name sortearor-times -- start
+pm2 start npm --name Sorteador-times -- start
 pm2 save
 pm2 startup
 ```
@@ -46,3 +46,4 @@ server {
   }
 }
 ```
+
