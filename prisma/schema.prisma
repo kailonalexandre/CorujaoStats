@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GameItemType {
+  team
+  character
+  map
+  class
+  weapon
+  other
+}
+
+enum MatchResult {
+  win
+  loss
+  draw
+}
+
+model Group {
+  id            String          @id @default(cuid())
+  name          String
+  players       Player[]
+  matches       Match[]
+  raffleHistory RaffleHistory[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("groups")
+}
+
+model Player {
+  id            String          @id @default(cuid())
+  name          String
+  nickname      String?
+  photoUrl      String?
+  groupId       String?
+  group         Group?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  matchPlayers  MatchPlayer[]
+  raffleHistory RaffleHistory[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([groupId])
+  @@map("players")
+}
+
+model Game {
+  id            String          @id @default(cuid())
+  name          String
+  slug          String          @unique
+  description   String?
+  items         GameItem[]
+  matches       Match[]
+  raffleHistory RaffleHistory[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("games")
+}
+
+model GameItem {
+  id            String          @id @default(cuid())
+  gameId        String
+  game          Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name          String
+  type          GameItemType
+  imageUrl      String?
+  active        Boolean         @default(true)
+  matchPlayers  MatchPlayer[]
+  raffleHistory RaffleHistory[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([gameId, type, active])
+  @@map("game_items")
+}
+
+model Match {
+  id          String        @id @default(cuid())
+  groupId     String?
+  group       Group?        @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  gameId      String
+  game        Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  date        DateTime      @default(now())
+  description String?
+  players     MatchPlayer[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([groupId])
+  @@index([gameId, date])
+  @@map("matches")
+}
+
+model MatchPlayer {
+  id             String       @id @default(cuid())
+  matchId        String
+  match          Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  playerId       String
+  player         Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  selectedItemId String?
+  selectedItem   GameItem?    @relation(fields: [selectedItemId], references: [id], onDelete: SetNull)
+  teamName       String?
+  result         MatchResult?
+  score          Int?
+  kills          Int?
+  deaths         Int?
+  assists        Int?
+  goals          Int?
+  knifeKills     Int?
+  headshots      Int?
+  damage         Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([matchId])
+  @@index([playerId])
+  @@index([selectedItemId])
+  @@map("match_players")
+}
+
+model RaffleHistory {
+  id        String    @id @default(cuid())
+  drawId    String?
+  groupId   String?
+  group     Group?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  gameId    String
+  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  playerId  String?
+  player    Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  itemId    String?
+  item      GameItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  groupName String?
+  createdAt DateTime  @default(now())
+
+  @@index([drawId])
+  @@index([groupId])
+  @@index([gameId, createdAt])
+  @@index([playerId])
+  @@index([itemId])
+  @@map("raffle_history")
+}
