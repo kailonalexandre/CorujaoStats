@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createMatchWithPlayers } from "@/lib/db/matches";
+import { requirePermission } from "@/lib/auth/session";
 import { matchSchema, type MatchInput } from "@/lib/validations/match";
 import { emitPesGameStateUpdated } from "@/lib/realtime/pes-realtime";
 import { updatePesPersistedMatchScore } from "@/modules/pes";
@@ -64,6 +65,8 @@ function validateGameRules(input: MatchInput) {
 }
 
 export async function createMatchAction(payload: unknown): Promise<MatchFormState> {
+  await requirePermission("manage_matches");
+
   const parsed = matchSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -107,6 +110,8 @@ export async function updatePesMatchScoreAction(
   _previousState: PesScoreFormState,
   formData: FormData,
 ): Promise<PesScoreFormState> {
+  await requirePermission("manage_matches");
+
   const parsed = pesScoreFormSchema.safeParse({
     sessionId: formData.get("sessionId"),
     matchId: formData.get("matchId"),

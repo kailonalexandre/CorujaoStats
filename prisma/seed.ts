@@ -1,7 +1,42 @@
+import { randomBytes, scrypt } from "node:crypto";
+import { promisify } from "node:util";
 import { PrismaClient, type GameItemType } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
-const adapter = new PrismaPg(process.env.DATABASE_URL ?? "");
+const scryptAsync = promisify(scrypt);
+const KEY_LENGTH = 64;
+
+const ALL_PERMISSIONS = [
+  "manage_players",
+  "manage_games",
+  "manage_items",
+  "manage_raffles",
+  "manage_matches",
+  "view_stats",
+  "manage_users",
+] as const;
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = (await scryptAsync(password, salt, KEY_LENGTH)) as Buffer;
+
+  return `scrypt:${salt}:${derivedKey.toString("hex")}`;
+}
+
+function getPoolConfig(databaseUrl: string) {
+  const url = new URL(databaseUrl);
+
+  return {
+    host: url.hostname,
+    port: Number(url.port || 3306),
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: url.pathname.replace(/^\//, ""),
+    connectionLimit: Number(url.searchParams.get("connection_limit") || 5),
+  };
+}
+
+const adapter = new PrismaMariaDb(getPoolConfig(process.env.DATABASE_URL ?? ""));
 const prisma = new PrismaClient({ adapter });
 
 const defaultGroup = {
@@ -203,6 +238,12 @@ const players = [
   },
 ] as const;
 
+const adminUser = {
+  name: process.env.AUTH_ADMIN_NAME || "Administrador",
+  email: (process.env.AUTH_ADMIN_EMAIL || "admin@sorteador.local").toLowerCase(),
+  password: process.env.AUTH_ADMIN_PASSWORD || "admin12345",
+};
+
 async function normalizeLegacyGames() {
   const legacyCsGo = await prisma.game.findUnique({
     where: { slug: "cs-go-cs2" },
@@ -226,6 +267,29 @@ async function normalizeLegacyGames() {
 
 async function main() {
   await normalizeLegacyGames();
+
+  await prisma.user.upsert({
+    where: { email: adminUser.email },
+    update: {
+      name: adminUser.name,
+      role: "admin",
+      active: true,
+      permissions: {
+        deleteMany: {},
+        create: ALL_PERMISSIONS.map((permission) => ({ permission })),
+      },
+    },
+    create: {
+      name: adminUser.name,
+      email: adminUser.email,
+      passwordHash: await hashPassword(adminUser.password),
+      role: "admin",
+      active: true,
+      permissions: {
+        create: ALL_PERMISSIONS.map((permission) => ({ permission })),
+      },
+    },
+  });
 
   await prisma.group.upsert({
     where: { id: defaultGroup.id },

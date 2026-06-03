@@ -10,6 +10,7 @@ import {
   getPlayerById,
   updatePlayer,
 } from "@/lib/db/players";
+import { requirePermission } from "@/lib/auth/session";
 import { playerIdSchema, playerSchema } from "@/lib/validations/player";
 
 export type PlayerFormState = {
@@ -78,6 +79,8 @@ export async function createPlayerAction(
   _previousState: PlayerFormState,
   formData: FormData,
 ): Promise<PlayerFormState> {
+  await requirePermission("manage_players");
+
   const { parsed, fileErrors } = await parsePlayerForm(formData);
   const hasFileErrors = Boolean(fileErrors.photoFile || fileErrors.coverFile);
 
@@ -108,6 +111,8 @@ export async function updatePlayerAction(
   _previousState: PlayerFormState,
   formData: FormData,
 ): Promise<PlayerFormState> {
+  await requirePermission("manage_players");
+
   const parsedId = playerIdSchema.safeParse({
     id: formData.get("id"),
   });
@@ -148,6 +153,8 @@ export async function updatePlayerAction(
 }
 
 export async function deletePlayerAction(formData: FormData) {
+  await requirePermission("manage_players");
+
   const parsed = playerIdSchema.safeParse({
     id: formData.get("id"),
   });

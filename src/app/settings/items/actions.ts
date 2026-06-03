@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createGameItem, setGameItemActive, updateGameItem } from "@/lib/db/game-items";
+import { requirePermission } from "@/lib/auth/session";
 import { gameItemIdSchema, gameItemSchema } from "@/lib/validations/game";
 
 export type GameItemFormState = {
@@ -31,6 +32,8 @@ export async function createGameItemAction(
   _previousState: GameItemFormState,
   formData: FormData,
 ): Promise<GameItemFormState> {
+  await requirePermission("manage_items");
+
   const parsed = parseGameItemForm(formData);
 
   if (!parsed.success) {
@@ -55,6 +58,8 @@ export async function updateGameItemAction(
   _previousState: GameItemFormState,
   formData: FormData,
 ): Promise<GameItemFormState> {
+  await requirePermission("manage_items");
+
   const parsedId = gameItemIdSchema.safeParse({
     id: formData.get("id"),
   });
@@ -79,6 +84,8 @@ export async function updateGameItemAction(
 }
 
 export async function toggleGameItemActiveAction(formData: FormData) {
+  await requirePermission("manage_items");
+
   const parsed = gameItemIdSchema.safeParse({
     id: formData.get("id"),
   });

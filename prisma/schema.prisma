@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
 enum GameItemType {
@@ -25,6 +25,49 @@ enum PesMatchStage {
   group
   final
   repechage
+}
+
+enum UserRole {
+  admin
+  user
+}
+
+enum UserPermissionType {
+  manage_players
+  manage_games
+  manage_items
+  manage_raffles
+  manage_matches
+  view_stats
+  manage_users
+}
+
+model User {
+  id           String           @id @default(cuid())
+  name         String
+  email        String           @unique
+  passwordHash String
+  role         UserRole         @default(user)
+  active       Boolean          @default(true)
+  permissions  UserPermission[]
+  lastLoginAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([role, active])
+  @@map("users")
+}
+
+model UserPermission {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission UserPermissionType
+  createdAt  DateTime           @default(now())
+
+  @@unique([userId, permission])
+  @@index([permission])
+  @@map("user_permissions")
 }
 
 model Group {

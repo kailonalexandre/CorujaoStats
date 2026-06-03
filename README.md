@@ -2,7 +2,7 @@
 
 Aplicacao web para sorteio de times, personagens, mapas e classes, cadastro de jogadores com foto, registro de partidas, rankings e estatisticas separadas por jogo.
 
-O projeto foi criado para substituir uma versao antiga baseada em arrays fixos no codigo. Na arquitetura atual, jogadores, jogos, itens sorteaveis, partidas e historicos ficam no banco de dados, usando Prisma e PostgreSQL.
+O projeto foi criado para substituir uma versao antiga baseada em arrays fixos no codigo. Na arquitetura atual, jogadores, jogos, itens sorteaveis, partidas e historicos ficam no banco de dados, usando Prisma e MySQL.
 
 ## Objetivo
 
@@ -22,10 +22,10 @@ O Sorteador Times organiza grupos de amigos que jogam PES/eFootball, Mortal Komb
 - TypeScript
 - React
 - Prisma ORM
-- PostgreSQL
+- MySQL
 - TailwindCSS
 - Zod
-- PM2 para producao em VPS
+- Docker Compose para producao em VPS
 - Nginx como proxy reverso
 - Certbot com Let's Encrypt para SSL
 
@@ -34,7 +34,7 @@ O Sorteador Times organiza grupos de amigos que jogam PES/eFootball, Mortal Komb
 Requisitos locais:
 
 - Node.js LTS
-- PostgreSQL
+- MySQL ou Docker
 - npm
 
 Instale as dependencias:
@@ -90,63 +90,71 @@ http://localhost:3000
 Exemplo:
 
 ```env
-DATABASE_URL="postgresql://sorteador_user:change_me@localhost:5432/sorteador_times?schema=public"
+DATABASE_URL="mysql://sorteador_user:change_me@localhost:3306/sorteador_times"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 PORT=3000
 NODE_ENV=development
+AUTH_JWT_SECRET=change_this_to_a_long_random_secret
+AUTH_ADMIN_NAME=Administrador
+AUTH_ADMIN_EMAIL=admin@sorteador.local
+AUTH_ADMIN_PASSWORD=change_me_admin_123
 ```
 
 Variaveis principais:
 
-- `DATABASE_URL`: conexao PostgreSQL usada pelo Prisma.
+- `DATABASE_URL`: conexao MySQL usada pelo Prisma.
 - `NEXT_PUBLIC_APP_URL`: URL publica da aplicacao.
 - `PORT`: porta interna usada pelo Next.js em producao.
 - `NODE_ENV`: ambiente da aplicacao.
+- `AUTH_JWT_SECRET`: segredo usado para assinar o JWT de sessao.
+- `AUTH_ADMIN_EMAIL` e `AUTH_ADMIN_PASSWORD`: credenciais do administrador criado pelo seed.
 
-Em producao, use uma senha forte no PostgreSQL e ajuste `NEXT_PUBLIC_APP_URL` para o dominio final:
+Em producao, use uma senha forte no MySQL e ajuste `NEXT_PUBLIC_APP_URL` para o dominio final:
 
 ```env
 NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
 NODE_ENV=production
 ```
 
-## Como configurar PostgreSQL
+## Como configurar MySQL
 
 Exemplo local ou em VPS Ubuntu:
 
 ```bash
 sudo apt update
-sudo apt install postgresql postgresql-contrib
-sudo -u postgres psql
+sudo apt install mysql-server
+sudo mysql
 ```
 
-Dentro do `psql`:
+Dentro do MySQL:
 
 ```sql
-CREATE DATABASE sorteador_times;
-CREATE USER sorteador_user WITH ENCRYPTED PASSWORD 'troque_esta_senha';
-GRANT ALL PRIVILEGES ON DATABASE sorteador_times TO sorteador_user;
-\q
+CREATE DATABASE sorteador_times CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'sorteador_user'@'localhost' IDENTIFIED BY 'troque_esta_senha';
+GRANT ALL PRIVILEGES ON sorteador_times.* TO 'sorteador_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
 ```
 
 Configure o `.env`:
 
 ```env
-DATABASE_URL="postgresql://sorteador_user:troque_esta_senha@localhost:5432/sorteador_times?schema=public"
+DATABASE_URL="mysql://sorteador_user:troque_esta_senha@localhost:3306/sorteador_times"
 ```
 
-## Docker com PostgreSQL
+## Docker com MySQL
 
-O projeto já está preparado para rodar com Docker Compose usando PostgreSQL.
+O projeto já está preparado para rodar com Docker Compose usando MySQL, app Next.js e Nginx interno.
 
 1. Construa e inicie os serviços:
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
 2. O serviço `db` cria o banco `sorteador_times` e o usuário `sorteador_user` com senha `change_me`.
-3. O serviço `web` aplica as migrations automaticamente e inicia o Next.js em `http://localhost:3000`.
+3. O serviço `app` aplica as migrations automaticamente e inicia o Next.js.
+4. O serviço `nginx` publica a aplicacao em `http://localhost:8082`.
 
 Se quiser parar os serviços:
 
@@ -202,14 +210,11 @@ Start de producao:
 npm run start
 ```
 
-Fluxo recomendado para deploy:
+Fluxo recomendado para deploy com Docker:
 
 ```bash
-npm install
-npx prisma generate
-npx prisma migrate deploy
-npm run build
-npm run start
+docker compose up -d --build
+docker compose exec -T app npm run prisma:seed
 ```
 
 ## Estrutura de pastas
@@ -443,9 +448,7 @@ Sempre que possivel, use consultas agregadas com Prisma e mantenha as estatistic
 Ambiente considerado:
 
 - VPS Linux Ubuntu
-- Node.js LTS
-- PostgreSQL
-- PM2
+- Docker e Docker Compose
 - Nginx
 - Certbot com Let's Encrypt
 
@@ -454,22 +457,14 @@ Ambiente considerado:
 ```bash
 sudo apt update
 sudo apt upgrade -y
-sudo apt install git nginx postgresql postgresql-contrib -y
+sudo apt install git nginx ca-certificates curl -y
 ```
 
-Instale Node.js LTS. Uma opcao comum e usar NodeSource:
+Instale Docker usando a documentacao oficial da distribuicao ou o pacote disponivel na VPS. Depois confira:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt install nodejs -y
-node -v
-npm -v
-```
-
-Instale PM2:
-
-```bash
-sudo npm install -g pm2
+docker --version
+docker compose version
 ```
 
 ### 2. Clonar projeto
@@ -491,60 +486,44 @@ nano .env
 Exemplo:
 
 ```env
-DATABASE_URL="postgresql://sorteador_user:senha_forte@localhost:5432/sorteador_times?schema=public"
+DATABASE_URL="mysql://sorteador_user:senha_forte@localhost:3306/sorteador_times"
+DOCKER_DATABASE_URL="mysql://sorteador_user:senha_forte@db:3306/sorteador_times"
+DOCKER_NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
 NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
 PORT=3000
 NODE_ENV=production
+MYSQL_DATABASE=sorteador_times
+MYSQL_USER=sorteador_user
+MYSQL_PASSWORD=senha_forte
+MYSQL_ROOT_PASSWORD=outra_senha_forte
+MYSQL_PORT=3307
+AUTH_JWT_SECRET=gere_um_token_longo_aleatorio
+AUTH_ADMIN_NAME=Administrador
+AUTH_ADMIN_EMAIL=admin@seu-dominio.com
+AUTH_ADMIN_PASSWORD=senha_forte_do_admin
 ```
 
-### 4. Instalar dependencias e preparar banco
+### 4. Subir containers
 
 ```bash
-npm install
-npx prisma generate
-npx prisma migrate deploy
-npm run prisma:seed
-npm run build
+docker compose up -d --build
+docker compose ps
+docker compose exec -T app npm run prisma:seed
 ```
 
 Em atualizacoes futuras, normalmente rode:
 
 ```bash
 git pull
-npm install
-npx prisma generate
-npx prisma migrate deploy
-npm run build
-pm2 restart sorteador-times
+docker compose up -d --build
+docker compose exec -T app npx prisma migrate deploy
+docker compose restart nginx
 ```
 
-### 5. Subir com PM2
-
-Usando o arquivo `ecosystem.config.cjs`:
+Tambem existe um script de deploy:
 
 ```bash
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup
-```
-
-Comando alternativo sem ecosystem:
-
-```bash
-pm2 start npm --name sorteador-times -- run start
-pm2 save
-pm2 startup
-```
-
-Comandos uteis:
-
-```bash
-pm2 status
-pm2 logs sorteador-times
-pm2 restart sorteador-times
-pm2 stop sorteador-times
-pm2 delete sorteador-times
-pm2 save
+./deploy.sh
 ```
 
 ## Nginx como proxy reverso
@@ -563,7 +542,7 @@ server {
     server_name seu-dominio.com www.seu-dominio.com;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:8082;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -626,15 +605,14 @@ npm run prisma:seed
 npx prisma studio
 ```
 
-### PM2
+### Docker
 
 ```bash
-pm2 start ecosystem.config.cjs
-pm2 start npm --name sorteador-times -- run start
-pm2 restart sorteador-times
-pm2 logs sorteador-times
-pm2 save
-pm2 startup
+docker compose up -d --build
+docker compose logs -f app
+docker compose logs -f db
+docker compose restart app
+docker compose down
 ```
 
 ### Nginx

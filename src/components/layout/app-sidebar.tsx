@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import {
   BarChart3,
   ClipboardList,
@@ -13,8 +13,10 @@ import {
   PanelLeftOpen,
   Settings,
   Shield,
+  LogOut,
   Users,
 } from "lucide-react";
+import type { getCurrentUser } from "@/lib/auth/session";
 
 const navigation = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -26,7 +28,9 @@ const navigation = [
   { href: "/settings", label: "Configuracoes", icon: Settings },
 ];
 
-export function AppSidebar() {
+type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
+
+export function AppSidebar({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
   const currentPath = pathname ?? "/";
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -37,6 +41,12 @@ export function AppSidebar() {
       window.localStorage.setItem("sidebar-collapsed", String(next));
       return next;
     });
+  }
+
+  async function handleLogout(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.assign("/login");
   }
 
   return (
@@ -119,6 +129,26 @@ export function AppSidebar() {
             );
           })}
         </nav>
+
+        <div className={["mt-auto border-t border-white/10 pt-4", isCollapsed ? "md:grid md:justify-items-center" : ""].join(" ")}>
+          <div className={["mb-3 min-w-0", isCollapsed ? "md:hidden" : ""].join(" ")}>
+            <p className="truncate text-sm font-medium text-white">{user?.name ?? "Usuario"}</p>
+            <p className="truncate text-xs text-neutral-500">{user?.email ?? "Sessao ativa"}</p>
+          </div>
+          <form onSubmit={handleLogout}>
+            <button
+              type="submit"
+              className={[
+                "flex h-10 items-center gap-3 rounded-md border border-white/10 px-3 text-sm font-medium text-neutral-300 transition hover:bg-white/8 hover:text-white",
+                isCollapsed ? "md:size-10 md:justify-center md:px-0" : "w-full",
+              ].join(" ")}
+              title="Sair"
+            >
+              <LogOut size={17} className="shrink-0" />
+              <span className={isCollapsed ? "md:hidden" : ""}>Sair</span>
+            </button>
+          </form>
+        </div>
       </div>
     </aside>
   );

@@ -1,11 +1,24 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-const adapter = new PrismaPg(process.env.DATABASE_URL ?? "");
+function getPoolConfig(databaseUrl: string) {
+  const url = new URL(databaseUrl);
+
+  return {
+    host: url.hostname,
+    port: Number(url.port || 3306),
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: url.pathname.replace(/^\//, ""),
+    connectionLimit: Number(url.searchParams.get("connection_limit") || 5),
+  };
+}
+
+const adapter = new PrismaMariaDb(getPoolConfig(process.env.DATABASE_URL ?? ""));
 
 export const prisma =
   globalForPrisma.prisma ??

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { saveRaffleHistory } from "@/lib/db/raffles";
+import { requirePermission } from "@/lib/auth/session";
 import { saveRaffleHistorySchema, type SaveRaffleHistoryInput } from "@/lib/validations/raffle";
 import { createPesGame, type PesUiGameState } from "@/modules/pes";
 
@@ -17,6 +18,8 @@ export type CreatePesRaffleState = SaveRaffleHistoryState & {
 export async function saveRaffleHistoryAction(
   payload: SaveRaffleHistoryInput,
 ): Promise<SaveRaffleHistoryState> {
+  await requirePermission("manage_raffles");
+
   const parsed = saveRaffleHistorySchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -42,6 +45,8 @@ export async function createPesRaffleAction(payload: {
   numberOfGroups: number;
   teamGroups?: string[];
 }): Promise<CreatePesRaffleState> {
+  await requirePermission("manage_raffles");
+
   try {
     const game = await createPesGame({
       playerIds: payload.playerIds,

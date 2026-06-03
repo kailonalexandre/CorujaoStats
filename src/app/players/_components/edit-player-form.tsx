@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Loader2, Save } from "lucide-react";
 import { updatePlayerAction } from "@/app/players/actions";
 import { initialPlayerFormState } from "@/app/players/_components/player-form-state";
@@ -15,16 +15,23 @@ type EditPlayerFormProps = {
     photoUrl: string | null;
     coverUrl: string | null;
   };
+  onSuccess?: () => void;
 };
 
-export function EditPlayerForm({ player }: EditPlayerFormProps) {
+export function EditPlayerForm({ player, onSuccess }: EditPlayerFormProps) {
   const [state, formAction, isPending] = useActionState(
     updatePlayerAction,
     initialPlayerFormState,
   );
 
+  useEffect(() => {
+    if (state.status === "success") {
+      onSuccess?.();
+    }
+  }, [onSuccess, state.status]);
+
   return (
-    <form action={formAction} className="mt-4 border-t border-white/10 pt-4">
+    <form action={formAction} className="grid gap-4">
       <input type="hidden" name="id" value={player.id} />
       <PlayerFormFields state={state} defaultValues={player} />
 

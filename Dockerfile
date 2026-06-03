@@ -15,7 +15,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="postgresql://sorteador_user:change_me@localhost:5432/sorteador_times?schema=public"
+ENV DATABASE_URL="mysql://sorteador_user:change_me@localhost:3306/sorteador_times"
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -38,7 +38,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/package*.json ./

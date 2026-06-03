@@ -34,6 +34,15 @@ export function PlayerPhoto({ name, photoUrl, size = "md", className = "" }: Pla
     .join(" ");
 
   if (photoUrl) {
+    if (photoUrl.startsWith("blob:") || photoUrl.startsWith("data:")) {
+      return (
+        <span className={`${classes} relative block`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photoUrl} alt={`Foto de ${name}`} className="h-full w-full object-cover" />
+        </span>
+      );
+    }
+
     return (
       <span className={`${classes} relative block`}>
         <Image

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createGame } from "@/lib/db/games";
+import { requirePermission } from "@/lib/auth/session";
 import { gameSchema } from "@/lib/validations/game";
 
 export type GameFormState = {
@@ -18,6 +19,8 @@ export async function createGameAction(
   _previousState: GameFormState,
   formData: FormData,
 ): Promise<GameFormState> {
+  await requirePermission("manage_games");
+
   const parsed = gameSchema.safeParse({
     name: formData.get("name"),
     slug: formData.get("slug"),
@@ -34,7 +37,7 @@ export async function createGameAction(
 
   try {
     await createGame(parsed.data);
-  } catch (error) {
+  } catch {
     return {
       status: "error",
       message: "Nao foi possivel cadastrar o jogo. Verifique se o slug ja existe.",
