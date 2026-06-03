@@ -1,0 +1,199 @@
+{
+  "main": {
+    "id": "719458cda9b9b349",
+    "type": "split",
+    "children": [
+      {
+        "id": "1d94029cb5ee749a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "cd48f409ca376b5f",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "2100d6b4e5a0e877",
+    "type": "split",
+    "children": [
+      {
+        "id": "c817d82424085792",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "588653aab2a66451",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de arquivos"
+            }
+          },
+          {
+            "id": "d54ea85f4a52cb42",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Procurar"
+            }
+          },
+          {
+            "id": "fca97b7047c341a5",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "1e071382edc85d42",
+    "type": "split",
+    "children": [
+      {
+        "id": "dd63b9bb52857440",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "af10b8d11b1ad3a3",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Links inversos"
+            }
+          },
+          {
+            "id": "28929f8fd2246d4f",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Links de saída"
+            }
+          },
+          {
+            "id": "fd9300d703ada50e",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "7db920c9326ee0ab",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas as propriedades"
+            }
+          },
+          {
+            "id": "ed90f73b576acdc9",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Sumário"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir a troca rápida": false,
+      "graph:Abrir visualização em gráfico": false,
+      "canvas:Criar novo canvas": false,
+      "daily-notes:Abrir a nota de hoje": false,
+      "templates:Inserir modelo": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Criar nova base": false
+    }
+  },
+  "active": "cd48f409ca376b5f",
+  "lastOpenFiles": [
+    "RENDER_DEPLOY.md",
+    "deploy.sh",
+    "docker/nginx/default.conf",
+    "docker/nginx",
+    "docker",
+    "docker-compose.yml",
+    "Dockerfile",
+    "node_modules/eslint-plugin-react/README.md",
+    "node_modules/language-subtag-registry/README.md",
+    "node_modules/vitest/node_modules/std-env/README.md",
+    "Sem título.base",
+    "docs/LLM_WIKI_AGENT.md",
+    "docs/UI_UX_AGENT.md",
+    "docs/deploy/vps.md",
+    "AGENTS.md",
+    "README.md",
+    "CLAUDE.md"
+  ]
+}
