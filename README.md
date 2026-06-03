@@ -90,14 +90,14 @@ http://localhost:3000
 Exemplo:
 
 ```env
-DATABASE_URL="mysql://sorteador_user:change_me@localhost:3306/sorteador_times"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NODE_ENV=production
 PORT=3000
-NODE_ENV=development
-AUTH_JWT_SECRET=change_this_to_a_long_random_secret
+NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
+DATABASE_URL="mysql://sorteador_user:SENHA_FORTE@host.docker.internal:3306/sorteador_times"
+AUTH_JWT_SECRET=troque_por_um_segredo_longo_gerado_com_openssl
 AUTH_ADMIN_NAME=Administrador
-AUTH_ADMIN_EMAIL=admin@sorteador.local
-AUTH_ADMIN_PASSWORD=change_me_admin_123
+AUTH_ADMIN_EMAIL=admin@seu-dominio.com
+AUTH_ADMIN_PASSWORD=troque_por_uma_senha_forte
 ```
 
 Variaveis principais:
@@ -116,6 +116,12 @@ NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
 NODE_ENV=production
 ```
 
+Gere o segredo JWT no SSH:
+
+```bash
+openssl rand -base64 48
+```
+
 ## Como configurar MySQL
 
 Exemplo local ou em VPS Ubuntu:
@@ -130,8 +136,8 @@ Dentro do MySQL:
 
 ```sql
 CREATE DATABASE sorteador_times CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'sorteador_user'@'localhost' IDENTIFIED BY 'troque_esta_senha';
-GRANT ALL PRIVILEGES ON sorteador_times.* TO 'sorteador_user'@'localhost';
+CREATE USER 'sorteador_user'@'%' IDENTIFIED BY 'troque_esta_senha';
+GRANT ALL PRIVILEGES ON sorteador_times.* TO 'sorteador_user'@'%';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -139,12 +145,12 @@ EXIT;
 Configure o `.env`:
 
 ```env
-DATABASE_URL="mysql://sorteador_user:troque_esta_senha@localhost:3306/sorteador_times"
+DATABASE_URL="mysql://sorteador_user:troque_esta_senha@host.docker.internal:3306/sorteador_times"
 ```
 
-## Docker com MySQL
+## Docker em producao com MySQL externo
 
-O projeto já está preparado para rodar com Docker Compose usando MySQL, app Next.js e Nginx interno.
+Em producao, o `docker-compose.yml` sobe apenas `app` e `nginx`. O MySQL deve estar fora do container deste projeto.
 
 1. Construa e inicie os serviços:
 
@@ -152,9 +158,16 @@ O projeto já está preparado para rodar com Docker Compose usando MySQL, app Ne
 docker compose up -d --build
 ```
 
-2. O serviço `db` cria o banco `sorteador_times` e o usuário `sorteador_user` com senha `change_me`.
-3. O serviço `app` aplica as migrations automaticamente e inicia o Next.js.
-4. O serviço `nginx` publica a aplicacao em `http://localhost:8082`.
+2. O serviço `app` aplica as migrations automaticamente e inicia o Next.js.
+3. O serviço `nginx` publica a aplicacao em `http://localhost:8082`.
+
+Para desenvolvimento com MySQL em container, use o override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+O override local usa variaveis `LOCAL_*` para conectar no servico `db` e usar `http://localhost:8082`, sem reaproveitar as variaveis de producao.
 
 Se quiser parar os serviços:
 
@@ -486,17 +499,10 @@ nano .env
 Exemplo:
 
 ```env
-DATABASE_URL="mysql://sorteador_user:senha_forte@localhost:3306/sorteador_times"
-DOCKER_DATABASE_URL="mysql://sorteador_user:senha_forte@db:3306/sorteador_times"
-DOCKER_NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
-NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
-PORT=3000
 NODE_ENV=production
-MYSQL_DATABASE=sorteador_times
-MYSQL_USER=sorteador_user
-MYSQL_PASSWORD=senha_forte
-MYSQL_ROOT_PASSWORD=outra_senha_forte
-MYSQL_PORT=3307
+PORT=3000
+NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
+DATABASE_URL="mysql://sorteador_user:senha_forte@host.docker.internal:3306/sorteador_times"
 AUTH_JWT_SECRET=gere_um_token_longo_aleatorio
 AUTH_ADMIN_NAME=Administrador
 AUTH_ADMIN_EMAIL=admin@seu-dominio.com
@@ -510,6 +516,8 @@ docker compose up -d --build
 docker compose ps
 docker compose exec -T app npm run prisma:seed
 ```
+
+O banco MySQL nao sobe nesse compose de producao. Ele deve existir antes, fora do container, e estar acessivel pelo `DATABASE_URL`.
 
 Em atualizacoes futuras, normalmente rode:
 
@@ -610,9 +618,14 @@ npx prisma studio
 ```bash
 docker compose up -d --build
 docker compose logs -f app
-docker compose logs -f db
 docker compose restart app
 docker compose down
+```
+
+Para logs do MySQL local em container, use o override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f db
 ```
 
 ### Nginx
