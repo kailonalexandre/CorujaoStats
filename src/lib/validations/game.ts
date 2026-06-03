@@ -17,6 +17,7 @@ export const gameItemSchema = z.object({
   type: z.enum(["team", "character", "map", "class", "weapon", "other"], {
     error: "Selecione um tipo de item.",
   }),
+  groupName: z.preprocess(emptyStringToUndefined, z.string().trim().max(80, "Use ate 80 caracteres.").optional()),
   imageUrl: optionalUrl("Informe uma URL valida para a imagem."),
   active: z.boolean({ error: "Informe se o item esta ativo." }).default(true),
 });

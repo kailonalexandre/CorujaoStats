@@ -1,9 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import type { GameItemType } from "@prisma/client";
-import { CheckCircle2, Dices, Loader2, Save } from "lucide-react";
-import { saveRaffleHistoryAction, type SaveRaffleHistoryState } from "@/app/raffles/actions";
+import { CheckCircle2, Dices, Layers2, Loader2, Save, Trophy, Users } from "lucide-react";
+import {
+  createPesRaffleAction,
+  saveRaffleHistoryAction,
+  type SaveRaffleHistoryState,
+} from "@/app/raffles/actions";
 import { PlayerPhoto } from "@/components/ui/player-photo";
 import type { SaveRaffleHistoryInput } from "@/lib/validations/raffle";
 
@@ -25,6 +30,7 @@ type GameItem = {
   gameId: string;
   name: string;
   type: GameItemType;
+  groupName: string | null;
   imageUrl: string | null;
 };
 
@@ -131,6 +137,10 @@ function typeLabel(type: GameItemType) {
   return labels[type];
 }
 
+function getPesTeamGroupName(item: GameItem) {
+  return item.groupName?.trim() || "Sem grupo";
+}
+
 function buildHistoryPayload(result: RaffleResult): SaveRaffleHistoryInput {
   if (result.mode === "teams") {
     return {
@@ -161,6 +171,41 @@ function buildHistoryPayload(result: RaffleResult): SaveRaffleHistoryInput {
   };
 }
 
+function PesAssignmentCard({ assignment }: { assignment: Assignment }) {
+  return (
+    <div className="flex min-h-16 items-center justify-between gap-3 rounded-lg border border-white/10 bg-neutral-950/55 px-3 py-2 transition hover:border-emerald-400/30">
+      <div className="flex min-w-0 items-center gap-3">
+        <PlayerPhoto
+          name={assignment.player.name}
+          photoUrl={assignment.player.photoUrl}
+          size="sm"
+        />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold text-white">
+            {assignment.player.name}
+          </span>
+          <span className="block truncate text-xs text-neutral-500">
+            {assignment.player.nickname || "Sem apelido"}
+          </span>
+        </span>
+      </div>
+      <span className="shrink-0 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-200">
+        {assignment.item?.name ?? assignment.teamName ?? "Sem time"}
+      </span>
+    </div>
+  );
+}
+
+function PesAssignments({ assignments }: { assignments: Assignment[] }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {assignments.map((assignment) => (
+        <PesAssignmentCard key={assignment.player.id} assignment={assignment} />
+      ))}
+    </div>
+  );
+}
+
 export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
   const defaultGameId = games.find((game) => game.slug === "pes")?.id ?? games[0]?.id ?? "";
   const [activeGameId, setActiveGameId] = useState(defaultGameId);
@@ -171,24 +216,65 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
     "weapon",
     "other",
   ]);
+  const [pesNumberOfGroups, setPesNumberOfGroups] = useState(2);
+  const [selectedPesTeamGroups, setSelectedPesTeamGroups] = useState<string[]>([]);
   const [result, setResult] = useState<RaffleResult | null>(null);
   const [message, setMessage] = useState<SaveRaffleHistoryState | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isDrawingPending, startDrawingTransition] = useTransition();
 
   const activeGame = games.find((game) => game.id === activeGameId) ?? games[0];
   const activeRule = activeGame ? getGameRule(activeGame.slug) : null;
   const activeItemTypes =
     activeGame?.slug === "battlefield" && activeRule ? battlefieldTypes : activeRule?.itemTypes;
+  const pesTeamGroups = useMemo(() => {
+    if (activeGame?.slug !== "pes") {
+      return [];
+    }
+
+    const groups = items
+      .filter((item) => item.gameId === activeGame.id && item.type === "team")
+      .reduce<Map<string, number>>((accumulator, item) => {
+        const groupName = getPesTeamGroupName(item);
+        accumulator.set(groupName, (accumulator.get(groupName) ?? 0) + 1);
+        return accumulator;
+      }, new Map());
+
+    return Array.from(groups.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((first, second) => first.name.localeCompare(second.name));
+  }, [activeGame, items]);
+  const selectedPesTeamGroupNames = useMemo(() => {
+    const availableGroupNames = pesTeamGroups.map((group) => group.name);
+    const validSelection = selectedPesTeamGroups.filter((groupName) =>
+      availableGroupNames.includes(groupName),
+    );
+
+    return validSelection.length > 0 ? validSelection : availableGroupNames;
+  }, [pesTeamGroups, selectedPesTeamGroups]);
+
   const activeItems = useMemo(() => {
     if (!activeGame || !activeRule) {
       return [];
     }
 
-    return items.filter(
-      (item) => item.gameId === activeGame.id && (activeItemTypes ?? []).includes(item.type),
-    );
-  }, [activeGame, activeItemTypes, activeRule, items]);
+    return items.filter((item) => {
+      const matchesGameAndType =
+        item.gameId === activeGame.id && (activeItemTypes ?? []).includes(item.type);
+
+      if (!matchesGameAndType) {
+        return false;
+      }
+
+      if (activeGame.slug !== "pes" || item.type !== "team" || pesTeamGroups.length === 0) {
+        return true;
+      }
+
+      return selectedPesTeamGroupNames.includes(getPesTeamGroupName(item));
+    });
+  }, [activeGame, activeItemTypes, activeRule, items, pesTeamGroups.length, selectedPesTeamGroupNames]);
   const selectedPlayers = players.filter((player) => selectedPlayerIds.includes(player.id));
+  const canSaveResult = Boolean(result) && !isPending;
 
   function togglePlayer(playerId: string) {
     setSelectedPlayerIds((current) =>
@@ -196,6 +282,24 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
         ? current.filter((id) => id !== playerId)
         : [...current, playerId],
     );
+    setMessage(null);
+  }
+
+  function togglePesTeamGroup(groupName: string) {
+    const availableGroupNames = pesTeamGroups.map((group) => group.name);
+
+    setSelectedPesTeamGroups((current) => {
+      if (current.length === 0) {
+        return [groupName];
+      }
+
+      const nextSelection = current.includes(groupName)
+        ? current.filter((selectedGroupName) => selectedGroupName !== groupName)
+        : [...current, groupName];
+
+      return nextSelection.length === availableGroupNames.length ? [] : nextSelection;
+    });
+    setResult(null);
     setMessage(null);
   }
 
@@ -218,6 +322,21 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
         message: "Selecione pelo menos um tipo de item para sortear no Battlefield.",
       });
       return;
+    }
+
+    if (activeGame.slug === "pes") {
+      if (!Number.isInteger(pesNumberOfGroups) || pesNumberOfGroups < 1) {
+        setMessage({ status: "error", message: "Informe uma quantidade valida de grupos para o PES." });
+        return;
+      }
+
+      if (selectedPlayers.length < pesNumberOfGroups) {
+        setMessage({
+          status: "error",
+          message: "A quantidade de grupos nao pode ser maior que a quantidade de jogadores.",
+        });
+        return;
+      }
     }
 
     if ((activeGame.slug === "cs-go" || activeGame.slug === "cs-go-cs2") && selectedPlayers.length < 2) {
@@ -280,6 +399,44 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
       return;
     }
 
+    if (activeGame.slug === "pes") {
+      startDrawingTransition(async () => {
+        const response = await createPesRaffleAction({
+          playerIds: selectedPlayers.map((player) => player.id),
+          numberOfGroups: pesNumberOfGroups,
+          teamGroups: pesTeamGroups.length > 0 ? selectedPesTeamGroupNames : undefined,
+        });
+
+        setMessage({
+          status: response.status,
+          message: response.message,
+        });
+
+        if (response.status !== "success" || !response.game) {
+          return;
+        }
+
+        setResult({
+          mode: "individual",
+          game: activeGame,
+          selectedTypes: activeItemTypes,
+          assignments: response.game.groupData.flatMap((group) =>
+            group.players.map((player) => ({
+              player: {
+                id: player.id,
+                name: player.name,
+                nickname: player.nickname ?? null,
+                photoUrl: player.photoUrl ?? null,
+              },
+              item: activeItems.find((item) => item.id === player.teamId),
+              teamName: player.teamName ?? undefined,
+            })),
+          ),
+        });
+      });
+      return;
+    }
+
     const shuffledItems = shuffle(activeItems);
 
     setResult({
@@ -310,6 +467,10 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {games.map((game) => {
           const rule = getGameRule(game.slug);
+          const gameItemCount = items.filter(
+            (item) => item.gameId === game.id && rule.itemTypes.includes(item.type),
+          ).length;
+          const selected = activeGame?.id === game.id;
 
           return (
             <button
@@ -321,31 +482,45 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
                 setMessage(null);
               }}
               className={[
-                "rounded-lg border p-4 text-left transition",
-                activeGame?.id === game.id
-                  ? "border-emerald-400 bg-emerald-500/10"
-                  : "border-white/10 bg-neutral-900 hover:border-white/25",
+                "group min-h-32 rounded-lg border p-4 text-left transition",
+                selected
+                  ? "border-emerald-400 bg-emerald-500/10 shadow-sm shadow-emerald-950/30"
+                  : "border-white/10 bg-neutral-900/85 hover:border-white/25 hover:bg-white/[0.04]",
               ].join(" ")}
             >
-              <span className="text-base font-semibold text-white">{rule.title}</span>
-              <span className="mt-2 block text-sm text-neutral-400">
-                {rule.mode === "teams" ? "Times e mapa" : "Sorteio individual"}
+              <span className="flex items-start justify-between gap-3">
+                <span>
+                  <span className="block text-base font-semibold text-white">{rule.title}</span>
+                  <span className="mt-2 block text-sm text-neutral-400">
+                    {rule.mode === "teams" ? "Times e mapa" : "Sorteio individual"}
+                  </span>
+                </span>
+                <span
+                  className={[
+                    "rounded-md px-2 py-1 text-xs font-semibold",
+                    selected ? "bg-emerald-500 text-neutral-950" : "bg-white/8 text-neutral-300",
+                  ].join(" ")}
+                >
+                  {gameItemCount}
+                </span>
               </span>
               {game.slug === "pes" ? (
-                <span className="mt-2 block text-xs text-emerald-200">Times ativos do banco</span>
+                <span className="mt-3 block text-xs text-emerald-200">
+                  Gera grupos e confrontos
+                </span>
               ) : null}
               {game.slug === "mortal-kombat" ? (
-                <span className="mt-2 block text-xs text-emerald-200">
+                <span className="mt-3 block text-xs text-emerald-200">
                   Personagens ativos do banco
                 </span>
               ) : null}
               {game.slug === "cs-go" || game.slug === "cs-go-cs2" ? (
-                <span className="mt-2 block text-xs text-emerald-200">
+                <span className="mt-3 block text-xs text-emerald-200">
                   Times equilibrados e mapa ativo
                 </span>
               ) : null}
               {game.slug === "battlefield" ? (
-                <span className="mt-2 block text-xs text-emerald-200">
+                <span className="mt-3 block text-xs text-emerald-200">
                   Mapas, classes, armas e outros
                 </span>
               ) : null}
@@ -355,16 +530,22 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-        <section className="rounded-lg border border-white/10 bg-neutral-900 p-5">
-          <div className="mb-4">
-            <h2 className="text-base font-semibold text-white">Participantes</h2>
-            <p className="mt-1 text-sm text-neutral-400">
-              Selecione os jogadores que entram no sorteio.
-            </p>
+        <section className="rounded-lg border border-white/10 bg-neutral-900/90 p-5 shadow-sm shadow-black/30">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-white">Participantes</h2>
+              <p className="mt-1 text-sm text-neutral-400">
+                Selecione os jogadores que entram no sorteio.
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-2 rounded-md border border-white/10 bg-neutral-950 px-3 py-2 text-xs font-semibold text-neutral-300">
+              <Users size={15} />
+              {selectedPlayers.length}/{players.length}
+            </span>
           </div>
 
           {activeGame?.slug === "battlefield" && activeRule ? (
-            <div className="mb-5 rounded-md border border-white/10 bg-white/[0.03] p-4">
+            <div className="mb-5 rounded-lg border border-white/10 bg-neutral-950/55 p-4">
               <h3 className="text-sm font-semibold text-white">Tipos para Battlefield</h3>
               <p className="mt-1 text-xs text-neutral-500">
                 Escolha quais tipos configurados no banco entram neste sorteio.
@@ -399,10 +580,86 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
             </div>
           ) : null}
 
+          {activeGame?.slug === "pes" && pesTeamGroups.length > 0 ? (
+            <div className="mb-5 rounded-lg border border-emerald-400/20 bg-emerald-500/[0.04] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Layers2 size={16} className="text-emerald-300" />
+                    Grupos de times do PES
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    Marque as ligas que podem aparecer neste sorteio.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPesTeamGroups([]);
+                    setResult(null);
+                    setMessage(null);
+                  }}
+                  className="h-8 rounded-md border border-emerald-400/30 px-3 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/10"
+                >
+                  Todos
+                </button>
+              </div>
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {pesTeamGroups.map((group) => {
+                  const selected = selectedPesTeamGroupNames.includes(group.name);
+
+                  return (
+                    <button
+                      key={group.name}
+                      type="button"
+                      onClick={() => togglePesTeamGroup(group.name)}
+                      className={[
+                        "flex min-h-11 items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-xs transition",
+                        selected
+                          ? "border-emerald-400 bg-emerald-500/10 text-emerald-100"
+                          : "border-white/10 bg-neutral-950/60 text-neutral-300 hover:bg-white/8",
+                      ].join(" ")}
+                    >
+                      <span className="font-semibold">{group.name}</span>
+                      <span className="rounded-md bg-white/[0.08] px-2 py-0.5 text-[11px] text-neutral-300">
+                        {group.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {activeGame?.slug === "pes" ? (
+            <div className="mb-5 rounded-lg border border-white/10 bg-neutral-950/55 p-4">
+              <label className="grid gap-2 text-sm">
+                <span className="font-semibold text-white">Quantidade de grupos</span>
+                <span className="text-xs leading-5 text-neutral-500">
+                  O sorteio cria as chaves, a classificacao e os confrontos em Partidas.
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={Math.max(1, selectedPlayers.length)}
+                  step={1}
+                  value={pesNumberOfGroups}
+                  onChange={(event) => {
+                    setPesNumberOfGroups(Number(event.target.value));
+                    setResult(null);
+                    setMessage(null);
+                  }}
+                  className="h-11 rounded-md border border-white/10 bg-neutral-900 px-3 text-white outline-none transition focus:border-emerald-400"
+                />
+              </label>
+            </div>
+          ) : null}
+
           {players.length === 0 ? (
             <p className="text-sm text-neutral-400">Cadastre jogadores antes de sortear.</p>
           ) : (
-            <div className="grid gap-3">
+            <div className="grid max-h-[520px] gap-3 overflow-y-auto pr-1">
               {players.map((player) => {
                 const selected = selectedPlayerIds.includes(player.id);
 
@@ -412,9 +669,9 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
                     type="button"
                     onClick={() => togglePlayer(player.id)}
                     className={[
-                      "flex items-center gap-3 rounded-md border p-3 text-left transition",
+                      "flex min-h-16 items-center gap-3 rounded-lg border p-3 text-left transition",
                       selected
-                        ? "border-emerald-400 bg-emerald-500/10"
+                        ? "border-emerald-400 bg-emerald-500/10 shadow-sm shadow-emerald-950/30"
                         : "border-white/10 bg-white/[0.03] hover:bg-white/8",
                     ].join(" ")}
                   >
@@ -432,20 +689,21 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
             </div>
           )}
 
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               type="button"
               onClick={runRaffle}
-              className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-500 px-4 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-400"
+              disabled={isDrawingPending}
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-emerald-500 px-4 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70 sm:flex-none"
             >
-              <Dices size={17} />
+              {isDrawingPending ? <Loader2 size={17} className="animate-spin" /> : <Dices size={17} />}
               Sortear
             </button>
             <button
               type="button"
               onClick={saveResult}
-              disabled={!result || isPending}
-              className="inline-flex h-10 items-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={!canSaveResult}
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-70 sm:flex-none"
             >
               {isPending ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
               Salvar historico
@@ -466,7 +724,7 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
           ) : null}
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-neutral-900 p-5">
+        <section className="rounded-lg border border-white/10 bg-neutral-900/90 p-5 shadow-sm shadow-black/30">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-base font-semibold text-white">Resultado</h2>
@@ -477,14 +735,14 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
               </p>
             </div>
             {activeRule ? (
-              <span className="text-xs uppercase text-neutral-500">
+              <span className="w-fit rounded-md border border-white/10 bg-neutral-950 px-3 py-2 text-xs uppercase text-neutral-400">
                 {(activeItemTypes ?? activeRule.itemTypes).map(typeLabel).join(", ")}
               </span>
             ) : null}
           </div>
 
           {!result ? (
-            <div className="rounded-lg border border-dashed border-white/12 bg-white/[0.03] p-8 text-center">
+            <div className="rounded-lg border border-dashed border-white/12 bg-neutral-950/60 p-8 text-center">
               <h3 className="text-lg font-semibold text-white">Nenhum sorteio realizado</h3>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-neutral-400">
                 Selecione jogadores, confira os itens ativos do banco e clique em sortear.
@@ -519,6 +777,29 @@ export function RaffleBoard({ players, games, items }: RaffleBoardProps) {
                   </div>
                 ))}
               </div>
+            </div>
+          ) : result.game.slug === "pes" ? (
+            <div className="grid gap-4">
+              <div className="flex flex-col gap-3 rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 place-items-center rounded-md bg-emerald-500 text-neutral-950">
+                    <Trophy size={20} />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Fase de grupos criada</h3>
+                    <p className="text-xs text-emerald-100/80">
+                      Abra Partidas para preencher placares.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/matches"
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-white px-3 text-xs font-semibold text-neutral-950 transition hover:bg-emerald-100"
+                >
+                  Abrir Partidas
+                </Link>
+              </div>
+              <PesAssignments assignments={result.assignments} />
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">

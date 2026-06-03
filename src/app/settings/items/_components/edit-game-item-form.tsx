@@ -3,11 +3,9 @@
 import type { Game, GameItem, GameItemType } from "@prisma/client";
 import { useActionState } from "react";
 import { Loader2, Save } from "lucide-react";
-import {
-  initialGameItemFormState,
-  updateGameItemAction,
-} from "@/app/settings/items/actions";
+import { updateGameItemAction } from "@/app/settings/items/actions";
 import { GameItemFormFields } from "@/app/settings/items/_components/game-item-form-fields";
+import { initialGameItemFormState } from "@/app/settings/items/_components/game-item-form-state";
 
 type EditGameItemFormProps = {
   item: GameItem;

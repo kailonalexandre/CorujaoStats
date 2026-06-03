@@ -36,33 +36,136 @@ const games = [
   },
 ] as const;
 
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+const pesTeamGroups = [
+  {
+    name: "Copa do Mundo",
+    teams: [
+      "Brasil",
+      "Argentina",
+      "Inglaterra",
+      "França",
+      "Espanha",
+      "Portugal",
+      "Bélgica",
+      "Alemanha",
+      "Holanda",
+      "Noruega",
+    ],
+  },
+  {
+    name: "Brasileirão",
+    teams: [
+      "Corinthians",
+      "Flamengo",
+      "Palmeiras",
+      "Santos",
+      "Botafogo",
+      "Atlético-MG",
+      "Cruzeiro",
+      "Fluminense",
+      "Grêmio",
+      "Internacional",
+    ],
+  },
+  {
+    name: "Champions League",
+    teams: [
+      "PSG",
+      "Arsenal",
+      "Manchester City",
+      "Real Madrid",
+      "Barcelona",
+      "Atlético de Madrid",
+      "Liverpool",
+      "Bayern de Munique",
+      "Chelsea",
+      "Milan",
+    ],
+  },
+  {
+    name: "Lendas",
+    teams: [
+      "Fireblast",
+      "MeanMachine",
+      "Monsters",
+      "Powerball",
+      "Predators",
+      "Ranmakes",
+      "ScreamBeem",
+      "ThunderStrike",
+      "WarmStorm",
+      "Wildcats",
+    ],
+  },
+];
+
+const mortalKombat9CharacterNames = [
+  "Baraka",
+  "Cyber Sub-Zero",
+  "Cyrax",
+  "Ermac",
+  "Freddy Krueger",
+  "Jade",
+  "Jax",
+  "Johnny Cage",
+  "Kabal",
+  "Kano",
+  "Kenshi",
+  "Kitana",
+  "Kratos",
+  "Kung Lao",
+  "Liu Kang",
+  "Mileena",
+  "Nightwolf",
+  "Noob Saibot",
+  "Quan Chi",
+  "Raiden",
+  "Rain",
+  "Reptile",
+  "Scorpion",
+  "Sektor",
+  "Shang Tsung",
+  "Sheeva",
+  "Sindel",
+  "Skarlet",
+  "Smoke",
+  "Sonya Blade",
+  "Stryker",
+  "Sub-Zero",
+];
+
 const gameItems: Array<{
   id: string;
   gameSlug: string;
   name: string;
   type: GameItemType;
+  groupName?: string;
 }> = [
-  { id: "pes-real-madrid", gameSlug: "pes", name: "Real Madrid", type: "team" },
-  { id: "pes-barcelona", gameSlug: "pes", name: "Barcelona", type: "team" },
-  { id: "pes-manchester-city", gameSlug: "pes", name: "Manchester City", type: "team" },
-  { id: "pes-liverpool", gameSlug: "pes", name: "Liverpool", type: "team" },
-  { id: "pes-bayern-de-munique", gameSlug: "pes", name: "Bayern de Munique", type: "team" },
-  { id: "pes-psg", gameSlug: "pes", name: "PSG", type: "team" },
-  { id: "pes-milan", gameSlug: "pes", name: "Milan", type: "team" },
-  { id: "pes-inter-de-milao", gameSlug: "pes", name: "Inter de Milao", type: "team" },
-  { id: "pes-arsenal", gameSlug: "pes", name: "Arsenal", type: "team" },
-  { id: "pes-borussia-dortmund", gameSlug: "pes", name: "Borussia Dortmund", type: "team" },
+  ...pesTeamGroups.flatMap((group) =>
+    group.teams.map((name) => ({
+      id: `pes-${slugify(name)}`,
+      gameSlug: "pes",
+      name,
+      type: "team" as const,
+      groupName: group.name,
+    })),
+  ),
 
-  { id: "mk-scorpion", gameSlug: "mortal-kombat", name: "Scorpion", type: "character" },
-  { id: "mk-sub-zero", gameSlug: "mortal-kombat", name: "Sub-Zero", type: "character" },
-  { id: "mk-liu-kang", gameSlug: "mortal-kombat", name: "Liu Kang", type: "character" },
-  { id: "mk-raiden", gameSlug: "mortal-kombat", name: "Raiden", type: "character" },
-  { id: "mk-johnny-cage", gameSlug: "mortal-kombat", name: "Johnny Cage", type: "character" },
-  { id: "mk-sonya-blade", gameSlug: "mortal-kombat", name: "Sonya Blade", type: "character" },
-  { id: "mk-kitana", gameSlug: "mortal-kombat", name: "Kitana", type: "character" },
-  { id: "mk-mileena", gameSlug: "mortal-kombat", name: "Mileena", type: "character" },
-  { id: "mk-baraka", gameSlug: "mortal-kombat", name: "Baraka", type: "character" },
-  { id: "mk-noob-saibot", gameSlug: "mortal-kombat", name: "Noob Saibot", type: "character" },
+  ...mortalKombat9CharacterNames.map((name) => ({
+    id: `mk-${slugify(name)}`,
+    gameSlug: "mortal-kombat",
+    name,
+    type: "character" as const,
+  })),
 
   { id: "cs-dust-ii", gameSlug: "cs-go", name: "Dust II", type: "map" },
   { id: "cs-inferno", gameSlug: "cs-go", name: "Inferno", type: "map" },
@@ -164,6 +267,7 @@ async function main() {
         gameId,
         name: item.name,
         type: item.type,
+        groupName: item.groupName ?? null,
         active: true,
       },
       create: {
@@ -171,6 +275,7 @@ async function main() {
         gameId,
         name: item.name,
         type: item.type,
+        groupName: item.groupName ?? null,
         active: true,
       },
     });

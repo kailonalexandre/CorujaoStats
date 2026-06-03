@@ -1,4 +1,4 @@
-# Sortearor Times
+# Sorteador Times
 
 Aplicacao web para sorteio de times, personagens, mapas e classes, cadastro de jogadores com foto, registro de partidas, rankings e estatisticas separadas por jogo.
 
@@ -6,7 +6,7 @@ O projeto foi criado para substituir uma versao antiga baseada em arrays fixos n
 
 ## Objetivo
 
-O Sortearor Times organiza grupos de amigos que jogam PES/eFootball, Mortal Kombat, CS:GO/CS2 e Battlefield. A aplicacao permite:
+O Sorteador Times organiza grupos de amigos que jogam PES/eFootball, Mortal Kombat, CS:GO/CS2 e Battlefield. A aplicacao permite:
 
 - Cadastrar jogadores com nome, apelido e foto por `photoUrl`.
 - Cadastrar itens sorteaveis por jogo, como times, personagens, mapas, classes, armas e outros.
@@ -90,7 +90,7 @@ http://localhost:3000
 Exemplo:
 
 ```env
-DATABASE_URL="postgresql://sortearor_user:change_me@localhost:5432/sortearor_times?schema=public"
+DATABASE_URL="postgresql://sorteador_user:change_me@localhost:5432/sorteador_times?schema=public"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 PORT=3000
 NODE_ENV=development
@@ -123,16 +123,35 @@ sudo -u postgres psql
 Dentro do `psql`:
 
 ```sql
-CREATE DATABASE sortearor_times;
-CREATE USER sortearor_user WITH ENCRYPTED PASSWORD 'troque_esta_senha';
-GRANT ALL PRIVILEGES ON DATABASE sortearor_times TO sortearor_user;
+CREATE DATABASE sorteador_times;
+CREATE USER sorteador_user WITH ENCRYPTED PASSWORD 'troque_esta_senha';
+GRANT ALL PRIVILEGES ON DATABASE sorteador_times TO sorteador_user;
 \q
 ```
 
 Configure o `.env`:
 
 ```env
-DATABASE_URL="postgresql://sortearor_user:troque_esta_senha@localhost:5432/sortearor_times?schema=public"
+DATABASE_URL="postgresql://sorteador_user:troque_esta_senha@localhost:5432/sorteador_times?schema=public"
+```
+
+## Docker com PostgreSQL
+
+O projeto jÃ¡ estÃ¡ preparado para rodar com Docker Compose usando PostgreSQL.
+
+1. Construa e inicie os serviÃ§os:
+
+```bash
+docker compose up --build
+```
+
+2. O serviÃ§o `db` cria o banco `sorteador_times` e o usuÃ¡rio `sorteador_user` com senha `change_me`.
+3. O serviÃ§o `web` aplica as migrations automaticamente e inicia o Next.js em `http://localhost:3000`.
+
+Se quiser parar os serviÃ§os:
+
+```bash
+docker compose down
 ```
 
 ## Prisma, migrations e seed
@@ -198,26 +217,26 @@ npm run start
 ```text
 .
 +-- docs/
-¦   +-- deploy/
+ï¿½   +-- deploy/
 +-- prisma/
-¦   +-- migrations/
-¦   +-- schema.prisma
-¦   +-- seed.ts
+ï¿½   +-- migrations/
+ï¿½   +-- schema.prisma
+ï¿½   +-- seed.ts
 +-- public/
 +-- src/
-¦   +-- app/
-¦   ¦   +-- matches/
-¦   ¦   +-- players/
-¦   ¦   +-- raffles/
-¦   ¦   +-- ranking/
-¦   ¦   +-- settings/
-¦   ¦   +-- stats/
-¦   +-- components/
-¦   ¦   +-- layout/
-¦   ¦   +-- ui/
-¦   +-- lib/
-¦       +-- db/
-¦       +-- validations/
+ï¿½   +-- app/
+ï¿½   ï¿½   +-- matches/
+ï¿½   ï¿½   +-- players/
+ï¿½   ï¿½   +-- raffles/
+ï¿½   ï¿½   +-- ranking/
+ï¿½   ï¿½   +-- settings/
+ï¿½   ï¿½   +-- stats/
+ï¿½   +-- components/
+ï¿½   ï¿½   +-- layout/
+ï¿½   ï¿½   +-- ui/
+ï¿½   +-- lib/
+ï¿½       +-- db/
+ï¿½       +-- validations/
 +-- .env.example
 +-- ecosystem.config.cjs
 +-- package.json
@@ -457,9 +476,9 @@ sudo npm install -g pm2
 
 ```bash
 cd /var/www
-sudo git clone <URL_DO_REPOSITORIO> sortearor-times
-sudo chown -R $USER:$USER /var/www/sortearor-times
-cd /var/www/sortearor-times
+sudo git clone <URL_DO_REPOSITORIO> sorteador-times
+sudo chown -R $USER:$USER /var/www/sorteador-times
+cd /var/www/sorteador-times
 ```
 
 ### 3. Configurar .env de producao
@@ -472,7 +491,7 @@ nano .env
 Exemplo:
 
 ```env
-DATABASE_URL="postgresql://sortearor_user:senha_forte@localhost:5432/sortearor_times?schema=public"
+DATABASE_URL="postgresql://sorteador_user:senha_forte@localhost:5432/sorteador_times?schema=public"
 NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
 PORT=3000
 NODE_ENV=production
@@ -496,7 +515,7 @@ npm install
 npx prisma generate
 npx prisma migrate deploy
 npm run build
-pm2 restart sortearor-times
+pm2 restart sorteador-times
 ```
 
 ### 5. Subir com PM2
@@ -512,7 +531,7 @@ pm2 startup
 Comando alternativo sem ecosystem:
 
 ```bash
-pm2 start npm --name sortearor-times -- run start
+pm2 start npm --name sorteador-times -- run start
 pm2 save
 pm2 startup
 ```
@@ -521,10 +540,10 @@ Comandos uteis:
 
 ```bash
 pm2 status
-pm2 logs sortearor-times
-pm2 restart sortearor-times
-pm2 stop sortearor-times
-pm2 delete sortearor-times
+pm2 logs sorteador-times
+pm2 restart sorteador-times
+pm2 stop sorteador-times
+pm2 delete sorteador-times
 pm2 save
 ```
 
@@ -533,7 +552,7 @@ pm2 save
 Crie a configuracao:
 
 ```bash
-sudo nano /etc/nginx/sites-available/sortearor-times
+sudo nano /etc/nginx/sites-available/sorteador-times
 ```
 
 Exemplo:
@@ -560,7 +579,7 @@ server {
 Ative o site:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/sortearor-times /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/sorteador-times /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -611,9 +630,9 @@ npx prisma studio
 
 ```bash
 pm2 start ecosystem.config.cjs
-pm2 start npm --name sortearor-times -- run start
-pm2 restart sortearor-times
-pm2 logs sortearor-times
+pm2 start npm --name sorteador-times -- run start
+pm2 restart sorteador-times
+pm2 logs sorteador-times
 pm2 save
 pm2 startup
 ```

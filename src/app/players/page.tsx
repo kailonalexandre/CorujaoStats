@@ -13,18 +13,22 @@ export default async function PlayersPage() {
     <div>
       <PageHeader
         title="Jogadores"
-        description="Cadastre jogadores do Grupo Principal com nome, apelido e foto por URL."
+        description="Cadastre jogadores do Grupo Principal com idade, foto enviada do computador e capa de perfil."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-        <CreatePlayerForm />
+      <div className="grid gap-6 items-start xl:grid-cols-[460px_minmax(0,1fr)]">
+        <div className="w-full">
+          <CreatePlayerForm />
+        </div>
 
-        <section>
+        <section className="grid gap-6 w-full">
           {players.length === 0 ? (
-            <EmptyState
-              title="Nenhum jogador cadastrado"
-              description="Cadastre o primeiro jogador para usar fotos em sorteios, rankings, dashboard e perfis."
-            />
+            <div className="rounded-3xl border border-white/10 bg-neutral-950/70 p-6 min-h-[450px]">
+              <EmptyState
+                title="Nenhum jogador cadastrado"
+                description="Cadastre o primeiro jogador para usar fotos em sorteios, rankings, dashboard e perfis."
+              />
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {players.map((player) => (
@@ -34,7 +38,9 @@ export default async function PlayersPage() {
                     id: player.id,
                     name: player.name,
                     nickname: player.nickname,
+                    age: player.age,
                     photoUrl: player.photoUrl,
+                    coverUrl: player.coverUrl,
                   }}
                 />
               ))}

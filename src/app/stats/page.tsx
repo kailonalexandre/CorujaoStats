@@ -55,10 +55,12 @@ function PlayerRanking({
           {rows.map((row, index) => (
             <div
               key={row.player.id}
-              className="flex items-center justify-between gap-4 rounded-md bg-white/[0.04] px-4 py-3"
+              className="flex flex-col gap-3 rounded-md border border-white/8 bg-neutral-950/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span className="w-6 text-sm font-semibold text-neutral-500">{index + 1}</span>
+                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-white/8 text-sm font-semibold text-neutral-300">
+                  {index + 1}
+                </span>
                 <PlayerPhoto name={row.player.name} photoUrl={row.player.photoUrl} size="sm" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-white">{row.player.name}</p>
@@ -67,7 +69,7 @@ function PlayerRanking({
                   </p>
                 </div>
               </div>
-              <span className="shrink-0 text-sm font-semibold text-emerald-200">
+              <span className="w-fit shrink-0 rounded-md border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-sm font-semibold tabular-nums text-emerald-200">
                 {formatNumber(row.value)}
                 {suffix}
               </span>
@@ -89,7 +91,7 @@ function MostUsedByPlayer({ title, rows }: { title: string; rows: MostUsedItemRo
           {rows.map((row) => (
             <div
               key={`${row.player.id}-${row.itemName}`}
-              className="flex items-center justify-between gap-4 rounded-md bg-white/[0.04] px-4 py-3"
+              className="flex flex-col gap-3 rounded-md border border-white/8 bg-neutral-950/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <PlayerPhoto name={row.player.name} photoUrl={row.player.photoUrl} size="sm" />
@@ -98,7 +100,9 @@ function MostUsedByPlayer({ title, rows }: { title: string; rows: MostUsedItemRo
                   <p className="truncate text-xs text-neutral-500">{row.itemName}</p>
                 </div>
               </div>
-              <span className="shrink-0 text-sm font-semibold text-emerald-200">{row.count} usos</span>
+              <span className="w-fit shrink-0 rounded-md border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-sm font-semibold tabular-nums text-emerald-200">
+                {row.count} usos
+              </span>
             </div>
           ))}
         </div>
@@ -117,14 +121,16 @@ function PopularItems({ title, rows }: { title: string; rows: PopularItemRow[] }
           {rows.map((row, index) => (
             <div
               key={row.itemName}
-              className="flex items-center justify-between rounded-md bg-white/[0.04] px-4 py-3"
+              className="flex items-center justify-between gap-4 rounded-md border border-white/8 bg-neutral-950/45 px-4 py-3"
             >
               <div>
                 <p className="text-sm font-medium text-white">
                   {index + 1}. {row.itemName}
                 </p>
               </div>
-              <span className="text-sm font-semibold text-emerald-200">{row.count} partidas</span>
+              <span className="shrink-0 rounded-md border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-sm font-semibold tabular-nums text-emerald-200">
+                {row.count} partidas
+              </span>
             </div>
           ))}
         </div>

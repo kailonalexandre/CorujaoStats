@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Game, GameItemType } from "@prisma/client";
+import { getGameItemTypeLabel } from "@/lib/game-item-labels";
 
 type GameItemFiltersProps = {
   games: Game[];
@@ -84,7 +85,7 @@ export function GameItemFilters({
                   : "bg-white/8 text-neutral-300 hover:bg-white/12",
               ].join(" ")}
             >
-              {type}
+              {getGameItemTypeLabel(type)}
             </Link>
           ))}
         </div>

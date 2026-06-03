@@ -1,0 +1,2 @@
+ALTER TABLE "players" ADD COLUMN "age" INTEGER;
+ALTER TABLE "players" ADD COLUMN "coverUrl" TEXT;

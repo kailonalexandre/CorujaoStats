@@ -55,10 +55,12 @@ function RankingCard({
           {rows.map((row, index) => (
             <div
               key={row.player.id}
-              className="flex items-center justify-between gap-4 rounded-md bg-white/[0.04] px-4 py-3"
+              className="flex flex-col gap-3 rounded-md border border-white/8 bg-neutral-950/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span className="w-7 text-sm font-semibold text-neutral-500">{index + 1}</span>
+                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-white/8 text-sm font-semibold text-neutral-300">
+                  {index + 1}
+                </span>
                 <PlayerPhoto name={row.player.name} photoUrl={row.player.photoUrl} size="sm" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-white">{row.player.name}</p>
@@ -67,9 +69,9 @@ function RankingCard({
                   </p>
                 </div>
               </div>
-              <div className="shrink-0 text-right">
+              <div className="shrink-0 rounded-md border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-left sm:text-right">
                 <p className="text-xs text-neutral-500">{statLabel}</p>
-                <p className="text-sm font-semibold text-emerald-200">
+                <p className="text-sm font-semibold tabular-nums text-emerald-200">
                   {formatValue(row.value)}
                   {suffix}
                 </p>

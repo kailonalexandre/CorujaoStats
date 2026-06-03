@@ -4,6 +4,7 @@ import { DEFAULT_GROUP_ID } from "@/lib/db/players";
 
 type NumericField =
   | "goals"
+  | "goalsAgainst"
   | "kills"
   | "deaths"
   | "assists"

@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sorteador_user
+      POSTGRES_PASSWORD: change_me
+      POSTGRES_DB: sorteador_times
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sh -c "sleep 5 && npx prisma migrate deploy && npm run dev -- --hostname 0.0.0.0"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://sorteador_user:change_me@db:5432/sorteador_times?schema=public
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      PORT: 3000
+      NODE_ENV: development
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    tty: true
+    stdin_open: true
+
+volumes:
+  postgres_data:

@@ -11,13 +11,9 @@ export type GameItemFormState = {
     gameId?: string[];
     name?: string[];
     type?: string[];
+    groupName?: string[];
     imageUrl?: string[];
   };
-};
-
-export const initialGameItemFormState: GameItemFormState = {
-  status: "idle",
-  message: "",
 };
 
 function parseGameItemForm(formData: FormData) {
@@ -25,6 +21,7 @@ function parseGameItemForm(formData: FormData) {
     gameId: formData.get("gameId"),
     name: formData.get("name"),
     type: formData.get("type"),
+    groupName: formData.get("groupName"),
     imageUrl: formData.get("imageUrl"),
     active: formData.get("active") !== "false",
   });

@@ -2,10 +2,8 @@
 
 import { useActionState } from "react";
 import { Loader2, Save } from "lucide-react";
-import {
-  initialPlayerFormState,
-  updatePlayerAction,
-} from "@/app/players/actions";
+import { updatePlayerAction } from "@/app/players/actions";
+import { initialPlayerFormState } from "@/app/players/_components/player-form-state";
 import { PlayerFormFields } from "@/app/players/_components/player-form-fields";
 
 type EditPlayerFormProps = {
@@ -13,7 +11,9 @@ type EditPlayerFormProps = {
     id: string;
     name: string;
     nickname: string | null;
+    age: number | null;
     photoUrl: string | null;
+    coverUrl: string | null;
   };
 };
 

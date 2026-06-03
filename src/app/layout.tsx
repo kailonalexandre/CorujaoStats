@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sortearor Times",
+  title: "Sorteador Times",
   description: "Sorteio de times, jogos e estatisticas de jogadores.",
 };
 
