@@ -60,6 +60,7 @@ export async function createMatchWithPlayers(input: MatchInput) {
             deaths: nullableNumber(player.deaths),
             assists: nullableNumber(player.assists),
             goals: nullableNumber(player.goals),
+            goalsAgainst: nullableNumber(player.goalsAgainst),
             knifeKills: nullableNumber(player.knifeKills),
             headshots: nullableNumber(player.headshots),
             damage: nullableNumber(player.damage),
@@ -70,10 +71,17 @@ export async function createMatchWithPlayers(input: MatchInput) {
   });
 }
 
-export async function getRecentMatches() {
+export async function getRecentMatches(gameSlugs?: string[]) {
   return prisma.match.findMany({
     where: {
       groupId: DEFAULT_GROUP_ID,
+      game: gameSlugs?.length
+        ? {
+            slug: {
+              in: gameSlugs,
+            },
+          }
+        : undefined,
     },
     take: 10,
     include: {

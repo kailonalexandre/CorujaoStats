@@ -17,6 +17,7 @@ const matchPlayerEntrySchema = z.object({
   deaths: optionalNonNegativeInt("Deaths"),
   assists: optionalNonNegativeInt("Assists"),
   goals: optionalNonNegativeInt("Gols"),
+  goalsAgainst: optionalNonNegativeInt("Gols tomados"),
   knifeKills: optionalNonNegativeInt("KnifeKills"),
   headshots: optionalNonNegativeInt("Headshots"),
   damage: optionalNonNegativeInt("Damage"),

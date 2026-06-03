@@ -45,47 +45,67 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-const pesTeamNames = [
-  "Brasil",
-  "Argentina",
-  "Inglaterra",
-  "França",
-  "Espanha",
-  "Portugal",
-  "Bélgica",
-  "Alemanha",
-  "Holanda",
-  "Noruega",
-  "Corinthians",
-  "Flamengo",
-  "Palmeiras",
-  "Santos",
-  "Botafogo",
-  "Atlético-MG",
-  "Cruzeiro",
-  "Fluminense",
-  "Grêmio",
-  "Internacional",
-  "PSG",
-  "Arsenal",
-  "Manchester City",
-  "Real Madrid",
-  "Barcelona",
-  "Atlético de Madrid",
-  "Liverpool",
-  "Bayern de Munique",
-  "Chelsea",
-  "Milan",
-  "Fireblast",
-  "MeanMachine",
-  "Monsters",
-  "Powerball",
-  "Predators",
-  "Ranmakes",
-  "ScreamBeem",
-  "ThunderStrike",
-  "WarmStorm",
-  "Wildcats",
+const pesTeamGroups = [
+  {
+    name: "Copa do Mundo",
+    teams: [
+      "Brasil",
+      "Argentina",
+      "Inglaterra",
+      "França",
+      "Espanha",
+      "Portugal",
+      "Bélgica",
+      "Alemanha",
+      "Holanda",
+      "Noruega",
+    ],
+  },
+  {
+    name: "Brasileirão",
+    teams: [
+      "Corinthians",
+      "Flamengo",
+      "Palmeiras",
+      "Santos",
+      "Botafogo",
+      "Atlético-MG",
+      "Cruzeiro",
+      "Fluminense",
+      "Grêmio",
+      "Internacional",
+    ],
+  },
+  {
+    name: "Champions League",
+    teams: [
+      "PSG",
+      "Arsenal",
+      "Manchester City",
+      "Real Madrid",
+      "Barcelona",
+      "Atlético de Madrid",
+      "Liverpool",
+      "Bayern de Munique",
+      "Chelsea",
+      "Milan",
+    ],
+  },
+  {
+    name: "Lendas",
+    teams: [
+      "Fireblast",
+      "MeanMachine",
+      "Monsters",
+      "Powerball",
+      "Predators",
+      "Ranmakes",
+      "ScreamBeem",
+      "ThunderStrike",
+      "WarmStorm",
+      "Wildcats",
+    ],
+  },
 ];
 
 const mortalKombat9CharacterNames = [
@@ -128,13 +148,17 @@ const gameItems: Array<{
   gameSlug: string;
   name: string;
   type: GameItemType;
+  groupName?: string;
 }> = [
-  ...pesTeamNames.map((name) => ({
-    id: `pes-${slugify(name)}`,
-    gameSlug: "pes",
-    name,
-    type: "team" as const,
-  })),
+  ...pesTeamGroups.flatMap((group) =>
+    group.teams.map((name) => ({
+      id: `pes-${slugify(name)}`,
+      gameSlug: "pes",
+      name,
+      type: "team" as const,
+      groupName: group.name,
+    })),
+  ),
 
   ...mortalKombat9CharacterNames.map((name) => ({
     id: `mk-${slugify(name)}`,
@@ -243,6 +267,7 @@ async function main() {
         gameId,
         name: item.name,
         type: item.type,
+        groupName: item.groupName ?? null,
         active: true,
       },
       create: {
@@ -250,6 +275,7 @@ async function main() {
         gameId,
         name: item.name,
         type: item.type,
+        groupName: item.groupName ?? null,
         active: true,
       },
     });

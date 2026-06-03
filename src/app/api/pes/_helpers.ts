@@ -12,6 +12,7 @@ export const pesSortSchema = z.object({
   numberOfGroups: z.number().int("A quantidade de grupos deve ser inteira.").min(1, "Informe pelo menos 1 grupo."),
   useRepechage: z.boolean().optional(),
   groupId: z.string().trim().min(1).optional(),
+  teamGroups: z.array(z.string().trim().min(1)).optional(),
 });
 
 export const pesScoreSchema = z.object({

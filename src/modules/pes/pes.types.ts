@@ -105,11 +105,6 @@ export type PesMatch = {
   isBye: boolean;
 };
 
-export type PesRepechageContext = {
-  matchId: string;
-  playerToReplaceIfLoseId: string;
-};
-
 export type PesChampion = {
   playerId: string;
   name: string;
@@ -125,7 +120,6 @@ export type PesTournamentState = {
   matches: PesMatch[];
   matchIdCounter: number;
   useRepechage: boolean;
-  repechageContext: PesRepechageContext[];
   champion: PesChampion | null;
   repechageChampion: PesChampion | null;
 };

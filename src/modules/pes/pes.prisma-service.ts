@@ -43,6 +43,7 @@ export type CreatePesGameInput = {
   useRepechage?: boolean;
   name?: string;
   groupId?: string;
+  teamGroups?: string[];
 };
 
 export type CreatePesGameSessionInput = {
@@ -57,6 +58,7 @@ export type SortPesGameInput = {
   numberOfGroups: number;
   useRepechage?: boolean;
   groupId?: string;
+  teamGroups?: string[];
 };
 
 export type UpdatePesGroupScoreInput = {
@@ -75,6 +77,17 @@ export type UpdatePesKnockoutScoreInput = UpdatePesGroupScoreInput & {
 export type UpdatePesScoreInput = UpdatePesKnockoutScoreInput;
 
 const PES_GAME_SLUG = "pes";
+const PES_MATCH_ID_SEPARATOR = ":";
+
+function toPersistentMatchId(sessionId: string, matchId: string): string {
+  const prefix = `${sessionId}${PES_MATCH_ID_SEPARATOR}`;
+  return matchId.startsWith(prefix) ? matchId : `${prefix}${matchId}`;
+}
+
+function toStateMatchId(sessionId: string, matchId: string): string {
+  const prefix = `${sessionId}${PES_MATCH_ID_SEPARATOR}`;
+  return matchId.startsWith(prefix) ? matchId.slice(prefix.length) : matchId;
+}
 
 function toPesTeam(teamItem: { id: string; name: string } | null): PesTeamInput | null {
   return teamItem
@@ -147,6 +160,104 @@ function hydrateStateChampions(state: PesTournamentState): PesTournamentState {
     champion: findChampion(state, state.champion?.playerId ?? null, "final"),
     repechageChampion: findChampion(state, state.repechageChampion?.playerId ?? null, "repechage"),
   };
+}
+
+function getPesMatchExternalRef(sessionId: string, matchId: string) {
+  return `pes:${sessionId}:${matchId}`;
+}
+
+function getPesMatchDescription(match: PesMatch) {
+  const stageLabel =
+    match.stage === "group"
+      ? `Grupo ${match.groupLetter ?? "-"}`
+      : match.stage === "final"
+        ? "Mata-mata principal"
+        : "Repescagem";
+
+  return `${stageLabel} - Rodada ${match.round} - Jogo ${match.matchIndex}`;
+}
+
+function findStateParticipant(state: PesTournamentState, playerId: string | null | undefined) {
+  if (!playerId) return null;
+  return state.groups.flatMap((group) => group.players).find((player) => player.id === playerId) ?? null;
+}
+
+function getMatchResult(match: PesMatch, playerId: string): "win" | "loss" | "draw" {
+  if (match.draw) return "draw";
+  return match.winnerPlayerId === playerId ? "win" : "loss";
+}
+
+async function syncPesMatchHistory(
+  db: Prisma.TransactionClient,
+  session: Pick<PesSessionRecord, "id" | "gameId" | "groupId">,
+  state: PesTournamentState,
+  matchId: string,
+) {
+  const match = state.matches.find((candidate) => candidate.id === matchId);
+  const externalRef = getPesMatchExternalRef(session.id, matchId);
+
+  if (
+    !match ||
+    !match.isFinished ||
+    !match.player2Id ||
+    match.player2Name === "BYE" ||
+    match.goals1 === null ||
+    match.goals2 === null
+  ) {
+    await db.match.deleteMany({
+      where: {
+        externalRef,
+      },
+    });
+    return;
+  }
+
+  const participant1 = findStateParticipant(state, match.player1Id);
+  const participant2 = findStateParticipant(state, match.player2Id);
+  if (!participant1 || !participant2) return;
+
+  const players = [
+    {
+      playerId: participant1.id,
+      selectedItemId: participant1.team?.id ?? participant1.teamId ?? null,
+      teamName: participant1.team?.name ?? participant1.teamName ?? null,
+      result: getMatchResult(match, participant1.id),
+      goals: match.goals1,
+      goalsAgainst: match.goals2,
+    },
+    {
+      playerId: participant2.id,
+      selectedItemId: participant2.team?.id ?? participant2.teamId ?? null,
+      teamName: participant2.team?.name ?? participant2.teamName ?? null,
+      result: getMatchResult(match, participant2.id),
+      goals: match.goals2,
+      goalsAgainst: match.goals1,
+    },
+  ];
+
+  await db.match.upsert({
+    where: {
+      externalRef,
+    },
+    create: {
+      externalRef,
+      groupId: session.groupId,
+      gameId: session.gameId,
+      date: new Date(),
+      description: getPesMatchDescription(match),
+      players: {
+        create: players,
+      },
+    },
+    update: {
+      date: new Date(),
+      description: getPesMatchDescription(match),
+      players: {
+        deleteMany: {},
+        create: players,
+      },
+    },
+  });
 }
 
 function nextMatchIdCounter(matches: PesMatch[]): number {
@@ -263,7 +374,7 @@ function toTournamentState(session: PesSessionRecord): PesTournamentState {
       const isBye = !matchRow.player2Id && matchRow.player2Name === "BYE";
 
       return {
-        id: matchRow.id,
+        id: toStateMatchId(session.id, matchRow.id),
         stage: matchRow.stage,
         round: matchRow.round,
         groupId: matchRow.stateGroupId,
@@ -297,7 +408,6 @@ function toTournamentState(session: PesSessionRecord): PesTournamentState {
     matches,
     matchIdCounter: session.matchIdCounter || nextMatchIdCounter(matches),
     useRepechage: session.useRepechage,
-    repechageContext: [],
     champion: null,
     repechageChampion: null,
   };
@@ -368,7 +478,7 @@ async function syncPesState(db: Prisma.TransactionClient, sessionId: string, sta
   if (state.matches.length > 0) {
     await db.pesGameMatch.createMany({
       data: state.matches.map((match) => ({
-        id: match.id,
+        id: toPersistentMatchId(sessionId, match.id),
         sessionId,
         stage: match.stage,
         round: match.round,
@@ -461,7 +571,6 @@ export async function createPesGameSession(input: CreatePesGameSessionInput = {}
       matches: [],
       matchIdCounter: 1,
       useRepechage: Boolean(input.useRepechage),
-      repechageContext: [],
       champion: null,
       repechageChampion: null,
     };
@@ -548,6 +657,11 @@ export async function sortPesGame(input: SortPesGameInput): Promise<PesUiGameSta
         gameId: game.id,
         type: GameItemType.team,
         active: true,
+        groupName: input.teamGroups?.length
+          ? {
+              in: input.teamGroups,
+            }
+          : undefined,
       },
       orderBy: {
         name: "asc",
@@ -584,7 +698,6 @@ export async function sortPesGame(input: SortPesGameInput): Promise<PesUiGameSta
       matches,
       matchIdCounter: nextMatchIdCounter(matches),
       useRepechage: drawResult.useRepechage,
-      repechageContext: [],
       champion: null,
       repechageChampion: null,
     };
@@ -622,6 +735,11 @@ export async function createPesGame(input: CreatePesGameInput): Promise<PesUiGam
         gameId: game.id,
         type: GameItemType.team,
         active: true,
+        groupName: input.teamGroups?.length
+          ? {
+              in: input.teamGroups,
+            }
+          : undefined,
       },
       orderBy: {
         name: "asc",
@@ -669,7 +787,6 @@ export async function createPesGame(input: CreatePesGameInput): Promise<PesUiGam
       matches,
       matchIdCounter: nextMatchIdCounter(matches),
       useRepechage: drawResult.useRepechage,
-      repechageContext: [],
       champion: null,
       repechageChampion: null,
     };
@@ -715,7 +832,11 @@ export async function updatePesPersistedGroupMatchScore(
     goals2: input.goals2,
   }));
 
-  const updatedSession = await prisma.$transaction((db) => syncPesState(db, session.id, nextState));
+  const updatedSession = await prisma.$transaction(async (db) => {
+    const updated = await syncPesState(db, session.id, nextState);
+    await syncPesMatchHistory(db, updated, nextState, input.matchId);
+    return updated;
+  });
 
   return stateToUi(updatedSession, nextState);
 }
@@ -739,7 +860,11 @@ export async function updatePesPersistedKnockoutMatchScore(
     pen2: input.pen2,
   }));
 
-  const updatedSession = await prisma.$transaction((db) => syncPesState(db, session.id, nextState));
+  const updatedSession = await prisma.$transaction(async (db) => {
+    const updated = await syncPesState(db, session.id, nextState);
+    await syncPesMatchHistory(db, updated, nextState, input.matchId);
+    return updated;
+  });
 
   return stateToUi(updatedSession, nextState);
 }
@@ -775,7 +900,11 @@ export async function updatePesPersistedMatchScore(input: UpdatePesScoreInput): 
         }),
   );
 
-  const updatedSession = await prisma.$transaction((db) => syncPesState(db, session.id, nextState));
+  const updatedSession = await prisma.$transaction(async (db) => {
+    const updated = await syncPesState(db, session.id, nextState);
+    await syncPesMatchHistory(db, updated, nextState, input.matchId);
+    return updated;
+  });
 
   return stateToUi(updatedSession, nextState);
 }
@@ -785,6 +914,7 @@ export async function resetActivePesGame(groupId = DEFAULT_GROUP_ID): Promise<Pe
   if (!session) return null;
 
   await prisma.$transaction(async (db) => {
+    await db.match.deleteMany({ where: { externalRef: { startsWith: `pes:${session.id}:` } } });
     await db.pesGameStanding.deleteMany({ where: { sessionId: session.id } });
     await db.pesGameMatch.deleteMany({ where: { sessionId: session.id } });
     await db.pesGameParticipant.deleteMany({ where: { sessionId: session.id } });
@@ -813,6 +943,7 @@ export async function resetPesGameById(sessionId: string, groupId = DEFAULT_GROU
   if (!session) return null;
 
   await prisma.$transaction(async (db) => {
+    await db.match.deleteMany({ where: { externalRef: { startsWith: `pes:${session.id}:` } } });
     await db.pesGameStanding.deleteMany({ where: { sessionId: session.id } });
     await db.pesGameMatch.deleteMany({ where: { sessionId: session.id } });
     await db.pesGameParticipant.deleteMany({ where: { sessionId: session.id } });

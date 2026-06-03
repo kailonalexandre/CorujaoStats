@@ -86,6 +86,7 @@ model GameItem {
   game            Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
   name            String
   type            GameItemType
+  groupName       String?
   imageUrl        String?
   active          Boolean              @default(true)
   matchPlayers    MatchPlayer[]
@@ -95,6 +96,7 @@ model GameItem {
   updatedAt       DateTime             @updatedAt
 
   @@index([gameId, type, active])
+  @@index([gameId, type, groupName, active])
   @@map("game_items")
 }
 
@@ -104,6 +106,7 @@ model Match {
   group       Group?        @relation(fields: [groupId], references: [id], onDelete: SetNull)
   gameId      String
   game        Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  externalRef String?       @unique
   date        DateTime      @default(now())
   description String?
   players     MatchPlayer[]
@@ -130,6 +133,7 @@ model MatchPlayer {
   deaths         Int?
   assists        Int?
   goals          Int?
+  goalsAgainst   Int?
   knifeKills     Int?
   headshots      Int?
   damage         Int?

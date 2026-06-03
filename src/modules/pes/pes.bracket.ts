@@ -1,4 +1,5 @@
 import { createPesMatch, toPesMatchPlayer } from "./pes.matches";
+import { calculatePesStandings, getPesQualifiedPlayers } from "./pes.standings";
 import type {
   PesChampion,
   PesChampionCheckResult,
@@ -6,7 +7,6 @@ import type {
   PesMatch,
   PesMatchPlayer,
   PesQualifiedPlayer,
-  PesRepechageContext,
   PesTournamentState,
 } from "./pes.types";
 
@@ -101,10 +101,6 @@ export function checkPesChampion(
         champion: gameState.champion,
         repechageChampion: champion,
       };
-}
-
-function getDirectQualifierIds(groups: PesGroup[]): string[] {
-  return groups.flatMap((group) => group.players.slice(0, 2).map((player) => player.id));
 }
 
 function toBracketMatchPlayer(player: PesQualifiedPlayer): PesMatchPlayer {
@@ -221,153 +217,48 @@ export function arePesGroupMatchesFinished(matches: PesMatch[]): boolean {
   return groupMatches.length > 0 && groupMatches.every((match) => match.status === "finished");
 }
 
-export function createPesFinalBracket(
+function withAdvancedByeStages(
   state: PesTournamentState,
-  qualifierIds: string[],
+  stages: Array<Extract<PesMatch["stage"], "final" | "repechage">>,
 ): PesTournamentState {
-  if (qualifierIds.length === 0) return state;
+  return stages.reduce((currentState, stage) => {
+    const firstRoundMatches = currentState.matches.filter((match) => match.stage === stage && match.round === 1);
+    return firstRoundMatches.length > 0 && firstRoundMatches.every((match) => match.status === "finished")
+      ? progressPesKnockoutRound(currentState, stage, 1)
+      : currentState;
+  }, state);
+}
+
+export function createPesFinalBracket(state: PesTournamentState, qualifiedPlayers: PesQualifiedPlayer[]): PesTournamentState {
+  if (qualifiedPlayers.length === 0) return state;
   if (state.matches.some((match) => match.stage === "final")) return state;
 
-  let nextId = state.matchIdCounter;
-  const matches: PesMatch[] = [];
-  const qualifierSet = new Set(qualifierIds);
-  const groupIndexes = state.groups.map((_, index) => index);
-
-  for (let index = 0; index + 1 < groupIndexes.length; index += 2) {
-    const firstGroupIndex = groupIndexes[index];
-    const secondGroupIndex = groupIndexes[index + 1];
-    const firstGroup = state.groups[firstGroupIndex];
-    const secondGroup = state.groups[secondGroupIndex];
-    const firstQualifiers = firstGroup.players.filter((player) => qualifierSet.has(player.id));
-    const secondQualifiers = secondGroup.players.filter((player) => qualifierSet.has(player.id));
-    const maxLength = Math.max(firstQualifiers.length, secondQualifiers.length);
-
-    for (let qualifierIndex = 0; qualifierIndex < maxLength; qualifierIndex += 1) {
-      const player1 = firstQualifiers[qualifierIndex];
-      const player2 = secondQualifiers[secondQualifiers.length - 1 - qualifierIndex];
-
-      if (player1 || player2) {
-        matches.push(
-          createPesMatch(
-            "final",
-            1,
-            matches.length + 1,
-            toPesMatchPlayer(player1 ?? player2),
-            player1 && player2 ? toPesMatchPlayer(player2) : null,
-            nextId,
-            {
-              id: `${firstGroup.id}-${secondGroup.id}`,
-              letter: `${firstGroup.letter}x${secondGroup.letter}`,
-            },
-          ),
-        );
-        nextId += 1;
-      }
-    }
-  }
-
-  if (groupIndexes.length % 2 !== 0) {
-    const lastGroup = state.groups[groupIndexes[groupIndexes.length - 1]];
-
-    lastGroup.players
-      .filter((player) => qualifierSet.has(player.id))
-      .forEach((player) => {
-        matches.push(
-          createPesMatch("final", 1, matches.length + 1, toPesMatchPlayer(player), null, nextId, lastGroup),
-        );
-        nextId += 1;
-      });
-  }
+  const matches = generatePesMainBracket(qualifiedPlayers);
 
   const nextState = {
     ...state,
     matches: [...state.matches, ...matches],
-    matchIdCounter: nextId,
   };
 
-  return matches.every((match) => match.status === "finished")
-    ? progressPesKnockoutRound(nextState, "final", 1)
-    : nextState;
+  return withAdvancedByeStages(nextState, ["final"]);
 }
 
 export function createPesPostGroupStage(state: PesTournamentState): PesTournamentState {
   if (!arePesGroupMatchesFinished(state.matches)) return state;
   if (state.matches.some((match) => match.stage === "final" || match.stage === "repechage")) return state;
 
-  const directQualifierIds = getDirectQualifierIds(state.groups);
-  const hasOddGroup = state.groups.some((group) => group.players.length % 2 !== 0);
-
-  if (!state.useRepechage || !hasOddGroup) {
-    return createPesFinalBracket(state, directQualifierIds);
-  }
-
-  const oddGroups = state.groups.filter((group) => group.players.length % 2 !== 0);
-  const evenGroups = state.groups.filter((group) => group.players.length % 2 === 0);
-  const pairCount = Math.min(oddGroups.length, evenGroups.length);
-  const repechageMatches: PesMatch[] = [];
-  const repechageContext: PesRepechageContext[] = [];
-  let nextId = state.matchIdCounter;
-
-  for (let index = 0; index < pairCount; index += 1) {
-    const oddGroup = oddGroups[index];
-    const evenGroup = evenGroups[index];
-    const oddRunnerUp = oddGroup.players[1];
-    const evenThirdPlace = evenGroup.players[2];
-
-    if (!oddRunnerUp || !evenThirdPlace) continue;
-
-    const match = createPesMatch(
-      "repechage",
-      1,
-      repechageMatches.length + 1,
-      toPesMatchPlayer(oddRunnerUp),
-      toPesMatchPlayer(evenThirdPlace),
-      nextId,
-      {
-        id: `${oddGroup.id}-${evenGroup.id}`,
-        letter: `${oddGroup.letter}x${evenGroup.letter}`,
-      },
-    );
-
-    repechageMatches.push(match);
-    repechageContext.push({
-      matchId: match.id,
-      playerToReplaceIfLoseId: oddRunnerUp.id,
-    });
-    nextId += 1;
-  }
-
-  if (repechageMatches.length === 0) {
-    return createPesFinalBracket(state, directQualifierIds);
-  }
-
-  return {
-    ...state,
-    matches: [...state.matches, ...repechageMatches],
-    matchIdCounter: nextId,
-    repechageContext,
-  };
-}
-
-export function completePesRepechage(state: PesTournamentState): PesTournamentState {
-  const repechageMatches = state.matches.filter((match) => match.stage === "repechage" && match.round === 1);
-  if (repechageMatches.length === 0) return state;
-  if (!repechageMatches.every((match) => match.status === "finished")) return state;
-  if (state.matches.some((match) => match.stage === "final")) return state;
-
-  const qualifierIds = getDirectQualifierIds(state.groups);
-
-  repechageMatches.forEach((match) => {
-    const context = state.repechageContext.find((item) => item.matchId === match.id);
-    if (!context || !match.winnerId) return;
-
-    if (match.winnerId !== match.player1.id) {
-      const replaceIndex = qualifierIds.indexOf(context.playerToReplaceIfLoseId);
-      if (replaceIndex !== -1) qualifierIds[replaceIndex] = match.winnerId;
-    }
+  const standings = calculatePesStandings(state.groups, state.matches, {
+    useRepechage: state.useRepechage,
   });
+  const { qualifiedPlayers, repechagePlayers } = getPesQualifiedPlayers(standings, state.useRepechage);
+  const mainMatches = generatePesMainBracket(qualifiedPlayers);
+  const repechageMatches = state.useRepechage ? generatePesRepechageBracket(repechagePlayers) : [];
+  const nextState: PesTournamentState = {
+    ...state,
+    matches: [...state.matches, ...mainMatches, ...repechageMatches],
+  };
 
-  return createPesFinalBracket(state, Array.from(new Set(qualifierIds)));
+  return withAdvancedByeStages(nextState, ["final", "repechage"]);
 }
 
 export function progressPesKnockoutRound(
@@ -375,8 +266,6 @@ export function progressPesKnockoutRound(
   stage: Extract<PesMatch["stage"], "final" | "repechage">,
   round: number,
 ): PesTournamentState {
-  if (stage === "repechage") return completePesRepechage(state);
-
   const roundMatches = state.matches.filter((match) => match.stage === stage && match.round === round);
   if (roundMatches.length === 0) return state;
   if (!roundMatches.every((match) => match.status === "finished")) return state;
@@ -385,16 +274,23 @@ export function progressPesKnockoutRound(
 
   if (winnerIds.length <= 1) {
     const championPlayer = winnerIds[0] ? getChampionPlayer(state, winnerIds[0]) : null;
-    return championPlayer
+    if (!championPlayer) return state;
+
+    return stage === "final"
       ? {
           ...state,
           champion: {
             ...championPlayer,
-            name: championPlayer.name,
             stage,
           },
         }
-      : state;
+      : {
+          ...state,
+          repechageChampion: {
+            ...championPlayer,
+            stage,
+          },
+        };
   }
 
   const nextRound = round + 1;

@@ -48,7 +48,6 @@ export class PesService {
       matches,
       matchIdCounter: matches.length + 1,
       useRepechage: Boolean(options.useRepechage),
-      repechageContext: [],
       champion: null,
       repechageChampion: null,
     };

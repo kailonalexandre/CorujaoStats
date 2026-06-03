@@ -47,7 +47,14 @@ export function GameItemCard({ item, games, types }: GameItemCardProps) {
             </span>
           </div>
           <p className="mt-1 text-sm text-neutral-400">{item.game.name}</p>
-          <p className="mt-2 text-xs uppercase text-neutral-500">{getGameItemTypeLabel(item.type)}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="text-xs uppercase text-neutral-500">{getGameItemTypeLabel(item.type)}</span>
+            {item.groupName ? (
+              <span className="rounded-md bg-white/[0.06] px-2 py-0.5 text-xs font-medium text-neutral-300">
+                {item.groupName}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 

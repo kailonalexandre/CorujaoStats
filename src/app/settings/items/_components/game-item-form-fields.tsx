@@ -13,6 +13,7 @@ type GameItemFormFieldsProps = {
     gameId?: string;
     name?: string;
     type?: GameItemType;
+    groupName?: string | null;
     imageUrl?: string | null;
     active?: boolean;
   };
@@ -25,7 +26,9 @@ export function GameItemFormFields({
   defaultValues,
 }: GameItemFormFieldsProps) {
   const [selectedType, setSelectedType] = useState<GameItemType>(defaultValues?.type ?? "other");
-  const selectedGame = games.find((game) => game.id === defaultValues?.gameId) ?? games[0];
+  const [selectedGameId, setSelectedGameId] = useState(defaultValues?.gameId ?? games[0]?.id ?? "");
+  const selectedGame = games.find((game) => game.id === selectedGameId) ?? games[0];
+  const showGroupName = selectedGame?.slug === "pes" && selectedType === "team";
 
   return (
     <div className="grid gap-5">
@@ -37,6 +40,7 @@ export function GameItemFormFields({
         <select
           name="gameId"
           defaultValue={defaultValues?.gameId ?? games[0]?.id ?? ""}
+          onChange={(event) => setSelectedGameId(event.target.value)}
           className="h-12 rounded-md border border-white/10 bg-neutral-950 px-3 text-white outline-none transition focus:border-emerald-400"
         >
           {games.map((game) => (
@@ -90,6 +94,27 @@ export function GameItemFormFields({
           <span className="text-xs text-red-300">{state.fieldErrors.type[0]}</span>
         ) : null}
       </label>
+
+      {showGroupName ? (
+        <label className="grid gap-2 text-sm">
+          <span className="font-medium text-neutral-100">Grupo do time</span>
+          <span className="text-xs leading-5 text-neutral-500">
+            Use o mesmo nome para times que devem ser sorteados juntos. Ex: Lendas, Brasileirão,
+            Copa do Mundo ou Champions League.
+          </span>
+          <input
+            name="groupName"
+            defaultValue={defaultValues?.groupName ?? ""}
+            className="h-12 rounded-md border border-white/10 bg-neutral-950 px-3 text-white outline-none transition placeholder:text-neutral-600 focus:border-emerald-400"
+            placeholder="Ex: Lendas"
+          />
+          {state.fieldErrors?.groupName ? (
+            <span className="text-xs text-red-300">{state.fieldErrors.groupName[0]}</span>
+          ) : null}
+        </label>
+      ) : (
+        <input type="hidden" name="groupName" value="" />
+      )}
 
       <label className="grid gap-2 text-sm">
         <span className="font-medium text-neutral-100">Imagem do item</span>

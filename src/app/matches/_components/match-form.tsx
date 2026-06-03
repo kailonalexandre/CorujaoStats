@@ -10,6 +10,8 @@ type MatchFormProps = {
   games: Game[];
   players: Player[];
   items: GameItem[];
+  initialGameSlug?: string;
+  showGamePicker?: boolean;
 };
 
 type PlayerDraft = {
@@ -24,6 +26,7 @@ type PlayerDraft = {
   deaths?: number;
   assists?: number;
   goals?: number;
+  goalsAgainst?: number;
   knifeKills?: number;
   headshots?: number;
 };
@@ -50,8 +53,12 @@ function numberOrUndefined(value: FormDataEntryValue | null) {
   return Number.isNaN(number) ? undefined : number;
 }
 
-export function MatchForm({ games, players, items }: MatchFormProps) {
-  const defaultGameId = games.find((game) => game.slug === "pes")?.id ?? games[0]?.id ?? "";
+export function MatchForm({ games, players, items, initialGameSlug, showGamePicker = true }: MatchFormProps) {
+  const defaultGameId =
+    games.find((game) => game.slug === initialGameSlug)?.id ??
+    games.find((game) => game.slug === "pes")?.id ??
+    games[0]?.id ??
+    "";
   const [gameId, setGameId] = useState(defaultGameId);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [message, setMessage] = useState<MatchFormState | null>(null);
@@ -92,6 +99,7 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
         result: (formData.get(`${prefix}-result`)?.toString() || undefined) as PlayerDraft["result"],
         score: numberOrUndefined(formData.get(`${prefix}-score`)),
         goals: numberOrUndefined(formData.get(`${prefix}-goals`)),
+        goalsAgainst: numberOrUndefined(formData.get(`${prefix}-goalsAgainst`)),
         kills: numberOrUndefined(formData.get(`${prefix}-kills`)),
         deaths: numberOrUndefined(formData.get(`${prefix}-deaths`)),
         assists: numberOrUndefined(formData.get(`${prefix}-assists`)),
@@ -120,27 +128,36 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
     <form action={onSubmit} className="grid gap-6">
       <section className="rounded-lg border border-white/10 bg-neutral-900/85 p-4 shadow-sm shadow-black/30 sm:p-5">
         <h2 className="text-base font-semibold text-white">Jogo</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {games.map((game) => (
-            <button
-              key={game.id}
-              type="button"
-              onClick={() => {
-                setGameId(game.id);
-                setMessage(null);
-              }}
-              className={[
-                "min-h-24 rounded-lg border p-4 text-left transition",
-                game.id === gameId
-                  ? "border-emerald-400 bg-emerald-500/10 shadow-sm shadow-emerald-950/30"
-                  : "border-white/10 bg-neutral-950/45 hover:border-white/20 hover:bg-white/8",
-              ].join(" ")}
-            >
-              <span className="font-semibold text-white">{gameLabels[game.slug] ?? game.name}</span>
-              <span className="mt-1 block text-sm text-neutral-400">{game.description ?? "Registrar partida"}</span>
-            </button>
-          ))}
-        </div>
+        {showGamePicker ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {games.map((game) => (
+              <button
+                key={game.id}
+                type="button"
+                onClick={() => {
+                  setGameId(game.id);
+                  setMessage(null);
+                }}
+                className={[
+                  "min-h-24 rounded-lg border p-4 text-left transition",
+                  game.id === gameId
+                    ? "border-emerald-400 bg-emerald-500/10 shadow-sm shadow-emerald-950/30"
+                    : "border-white/10 bg-neutral-950/45 hover:border-white/20 hover:bg-white/8",
+                ].join(" ")}
+              >
+                <span className="font-semibold text-white">{gameLabels[game.slug] ?? game.name}</span>
+                <span className="mt-1 block text-sm text-neutral-400">
+                  {game.description ?? "Registrar partida"}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-4 py-3">
+            <p className="text-sm font-semibold text-white">{gameLabels[activeSlug] ?? activeGame?.name}</p>
+            <p className="mt-1 text-sm text-neutral-400">{activeGame?.description ?? "Registrar partida"}</p>
+          </div>
+        )}
 
         <label className="mt-4 grid gap-2 text-sm">
           <span className="font-medium text-neutral-200">Descricao opcional</span>
@@ -222,6 +239,7 @@ export function MatchForm({ games, players, items }: MatchFormProps) {
                       <>
                         <SelectField name={`${prefix}-selectedItemId`} label="Time usado" items={gameItems} />
                         <NumberField name={`${prefix}-goals`} label="Gols" />
+                        <NumberField name={`${prefix}-goalsAgainst`} label="Gols tomados" />
                         <ResultField name={`${prefix}-result`} allowDraw />
                       </>
                     ) : null}

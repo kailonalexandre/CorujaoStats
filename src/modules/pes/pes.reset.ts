@@ -20,7 +20,6 @@ export function resetPesGame(gameState: PesGameState | PesTournamentState): PesG
     groups: [],
     matches: [],
     matchIdCounter: 1,
-    repechageContext: [],
     champion: null,
     repechageChampion: null,
   };
