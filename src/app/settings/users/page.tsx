@@ -2,19 +2,22 @@ import { LockKeyhole, ShieldCheck } from "lucide-react";
 import { CreateUserForm } from "@/app/settings/users/_components/create-user-form";
 import {
   toggleUserActiveAction,
+  updateUserAccessAction,
   updateUserPermissionsAction,
 } from "@/app/settings/users/actions";
 import { ALL_PERMISSIONS, permissionLabels } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
+import { getPlayersByDefaultGroup } from "@/lib/db/players";
 import { getUsers } from "@/lib/db/users";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { PlayerPhoto } from "@/components/ui/player-photo";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsUsersPage() {
   await requirePermission("manage_users");
-  const users = await getUsers();
+  const [users, players] = await Promise.all([getUsers(), getPlayersByDefaultGroup()]);
 
   return (
     <div>
@@ -24,7 +27,7 @@ export default async function SettingsUsersPage() {
       />
 
       <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-        <CreateUserForm />
+        <CreateUserForm players={players} />
 
         <section className="grid content-start gap-4">
           {users.length === 0 ? (
@@ -57,6 +60,21 @@ export default async function SettingsUsersPage() {
                     <p className="mt-2 text-xs text-neutral-500">
                       Ultimo acesso: {user.lastLoginAt ? user.lastLoginAt.toLocaleString("pt-BR") : "Nunca"}
                     </p>
+                    <div className="mt-4 flex items-center gap-3 rounded-md border border-white/10 bg-neutral-950/70 p-3">
+                      {user.player ? (
+                        <>
+                          <PlayerPhoto name={user.player.name} photoUrl={user.player.photoUrl} size="sm" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-white">{user.player.name}</p>
+                            <p className="truncate text-xs text-neutral-500">
+                              {user.player.nickname ? `@${user.player.nickname}` : "Player vinculado"}
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-neutral-500">Nenhum player vinculado.</p>
+                      )}
+                    </div>
                   </div>
 
                   <form action={toggleUserActiveAction}>
@@ -71,6 +89,48 @@ export default async function SettingsUsersPage() {
                     </button>
                   </form>
                 </div>
+
+                <form action={updateUserAccessAction} className="mt-5 grid gap-3 rounded-lg border border-white/10 bg-neutral-950/50 p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                  <input type="hidden" name="id" value={user.id} />
+                  <div className="grid gap-2">
+                    <label htmlFor={`role-${user.id}`} className="text-sm font-medium text-neutral-200">
+                      Cargo
+                    </label>
+                    <select
+                      id={`role-${user.id}`}
+                      name="role"
+                      defaultValue={user.role}
+                      className="h-10 rounded-md border border-white/10 bg-neutral-950 px-3 text-sm text-white"
+                    >
+                      <option value="user">Usuario</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                  <div className="grid gap-2">
+                    <label htmlFor={`player-${user.id}`} className="text-sm font-medium text-neutral-200">
+                      Player
+                    </label>
+                    <select
+                      id={`player-${user.id}`}
+                      name="playerId"
+                      defaultValue={user.playerId ?? ""}
+                      className="h-10 rounded-md border border-white/10 bg-neutral-950 px-3 text-sm text-white"
+                    >
+                      <option value="">Nenhum player</option>
+                      {players.map((player) => (
+                        <option key={player.id} value={player.id}>
+                          {player.name}{player.nickname ? ` (${player.nickname})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 text-sm font-semibold text-neutral-950 transition hover:bg-emerald-200"
+                  >
+                    Salvar acesso
+                  </button>
+                </form>
 
                 <form action={updateUserPermissionsAction} className="mt-5 grid gap-3">
                   <input type="hidden" name="id" value={user.id} />

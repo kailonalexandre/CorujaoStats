@@ -17,16 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import type { getCurrentUser } from "@/lib/auth/session";
-
-const navigation = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/players", label: "Jogadores", icon: Users },
-  { href: "/raffles", label: "Sorteios", icon: Dices },
-  { href: "/matches", label: "Partidas", icon: ClipboardList },
-  { href: "/stats", label: "Estatisticas", icon: BarChart3 },
-  { href: "/ranking", label: "Ranking", icon: Medal },
-  { href: "/settings", label: "Configuracoes", icon: Settings },
-];
+import { hasPermission } from "@/lib/auth/permissions";
 
 type CurrentUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
@@ -34,6 +25,23 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
   const pathname = usePathname();
   const currentPath = pathname ?? "/";
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const navigation = [
+    { href: "/", label: "Dashboard", icon: Home, show: true },
+    { href: "/players", label: "Jogadores", icon: Users, show: true },
+    { href: "/raffles", label: "Sorteios", icon: Dices, show: hasPermission(user, "manage_raffles") },
+    { href: "/matches", label: "Partidas", icon: ClipboardList, show: hasPermission(user, "manage_matches") },
+    { href: "/stats", label: "Estatisticas", icon: BarChart3, show: hasPermission(user, "view_stats") },
+    { href: "/ranking", label: "Ranking", icon: Medal, show: hasPermission(user, "view_stats") },
+    {
+      href: "/settings",
+      label: "Configuracoes",
+      icon: Settings,
+      show:
+        hasPermission(user, "manage_games") ||
+        hasPermission(user, "manage_items") ||
+        hasPermission(user, "manage_users"),
+    },
+  ];
 
   function toggleSidebar() {
     setIsCollapsed((current) => {
@@ -105,7 +113,7 @@ export function AppSidebar({ user }: { user: CurrentUser }) {
             isCollapsed ? "md:justify-items-center" : "",
           ].join(" ")}
         >
-          {navigation.map((item) => {
+          {navigation.filter((item) => item.show).map((item) => {
             const Icon = item.icon;
             const isActive =
               item.href === "/" ? currentPath === "/" : currentPath.startsWith(item.href);

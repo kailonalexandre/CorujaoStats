@@ -3,10 +3,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { CreateGameForm } from "@/app/settings/games/_components/create-game-form";
 import { getGames } from "@/lib/db/games";
+import { requirePermission } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsGamesPage() {
+  await requirePermission("manage_games");
   const games = await getGames();
 
   return (
