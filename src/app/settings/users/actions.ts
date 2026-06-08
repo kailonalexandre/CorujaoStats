@@ -8,9 +8,8 @@ import {
   updateUserPermissions,
 } from "@/lib/db/users";
 import { requirePermission } from "@/lib/auth/session";
+import { BASIC_USER_PERMISSIONS } from "@/lib/auth/permissions";
 import { updateUserAccessSchema, userIdSchema, userSchema } from "@/lib/validations/auth";
-
-const DEFAULT_USER_PERMISSIONS = ["manage_raffles", "manage_matches", "view_stats"] as const;
 
 export type UserFormState = {
   status: "idle" | "success" | "error";
@@ -44,7 +43,7 @@ export async function createUserAction(
     active: formData.get("active") === "true",
     permissions:
       formData.get("role") === "user" && formData.getAll("permissions").length === 0
-        ? [...DEFAULT_USER_PERMISSIONS]
+        ? [...BASIC_USER_PERMISSIONS]
         : parsePermissions(formData),
   });
 

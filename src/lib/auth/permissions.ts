@@ -12,6 +12,12 @@ export const ALL_PERMISSIONS = [
   "manage_users",
 ] as const satisfies UserPermissionType[];
 
+export const BASIC_USER_PERMISSIONS = [
+  "manage_raffles",
+  "manage_matches",
+  "view_stats",
+] as const satisfies UserPermissionType[];
+
 export const permissionLabels: Record<UserPermissionType, string> = {
   manage_players: "Gerenciar jogadores",
   manage_games: "Gerenciar jogos",

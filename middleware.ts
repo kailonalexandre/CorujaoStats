@@ -2,7 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/permissions";
 import { verifyAuthToken } from "@/lib/auth/jwt";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/favicon.ico"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/logout",
+  "/favicon.ico",
+];
 
 function isPublicPath(pathname: string) {
   return (
