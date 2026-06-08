@@ -273,6 +273,7 @@ async function main() {
     update: {
       name: adminUser.name,
       role: "admin",
+      playerId: null,
       active: true,
       permissions: {
         deleteMany: {},
@@ -284,6 +285,7 @@ async function main() {
       email: adminUser.email,
       passwordHash: await hashPassword(adminUser.password),
       role: "admin",
+      playerId: null,
       active: true,
       permissions: {
         create: ALL_PERMISSIONS.map((permission) => ({ permission })),

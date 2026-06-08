@@ -1,9 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createUser, setUserActive, updateUserPermissions } from "@/lib/db/users";
+import {
+  createUser,
+  setUserActive,
+  updateUserAccess,
+  updateUserPermissions,
+} from "@/lib/db/users";
 import { requirePermission } from "@/lib/auth/session";
-import { userIdSchema, userSchema } from "@/lib/validations/auth";
+import { updateUserAccessSchema, userIdSchema, userSchema } from "@/lib/validations/auth";
+
+const DEFAULT_USER_PERMISSIONS = ["manage_raffles", "manage_matches", "view_stats"] as const;
 
 export type UserFormState = {
   status: "idle" | "success" | "error";
@@ -13,6 +20,7 @@ export type UserFormState = {
     email?: string[];
     password?: string[];
     role?: string[];
+    playerId?: string[];
     permissions?: string[];
   };
 };
@@ -32,8 +40,12 @@ export async function createUserAction(
     email: formData.get("email"),
     password: formData.get("password"),
     role: formData.get("role"),
+    playerId: formData.get("playerId"),
     active: formData.get("active") === "true",
-    permissions: parsePermissions(formData),
+    permissions:
+      formData.get("role") === "user" && formData.getAll("permissions").length === 0
+        ? [...DEFAULT_USER_PERMISSIONS]
+        : parsePermissions(formData),
   });
 
   if (!parsed.success) {
@@ -59,6 +71,23 @@ export async function createUserAction(
     status: "success",
     message: "Usuario cadastrado com sucesso.",
   };
+}
+
+export async function updateUserAccessAction(formData: FormData) {
+  await requirePermission("manage_users");
+
+  const parsed = updateUserAccessSchema.safeParse({
+    id: formData.get("id"),
+    role: formData.get("role"),
+    playerId: formData.get("playerId"),
+  });
+
+  if (!parsed.success) {
+    return;
+  }
+
+  await updateUserAccess(parsed.data.id, parsed.data.role, parsed.data.playerId);
+  revalidatePath("/settings/users");
 }
 
 export async function updateUserPermissionsAction(formData: FormData) {

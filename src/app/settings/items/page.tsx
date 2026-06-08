@@ -7,6 +7,7 @@ import { GameItemCard } from "@/app/settings/items/_components/game-item-card";
 import { GameItemFilters } from "@/app/settings/items/_components/game-item-filters";
 import { getGameItems, getGamesForItems } from "@/lib/db/game-items";
 import { getGameItemTypeLabel } from "@/lib/game-item-labels";
+import { requirePermission } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,8 @@ export default async function SettingsItemsPage({
 }: {
   searchParams: Promise<{ gameId?: string; type?: string; page?: string; tab?: string }>;
 }) {
+  await requirePermission("manage_items");
+
   const query = await searchParams;
   const games = await getGamesForItems();
   const types = Object.values(GameItemType);

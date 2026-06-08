@@ -4,13 +4,18 @@ import { useActionState } from "react";
 import { UserPlus } from "lucide-react";
 import { createUserAction, type UserFormState } from "@/app/settings/users/actions";
 import { ALL_PERMISSIONS, permissionLabels } from "@/lib/auth/permissions";
+import type { getPlayersByDefaultGroup } from "@/lib/db/players";
 
 const initialState: UserFormState = {
   status: "idle",
   message: "",
 };
 
-export function CreateUserForm() {
+const defaultPermissionValues = new Set(["manage_raffles", "manage_matches", "view_stats"]);
+
+type PlayerOption = Awaited<ReturnType<typeof getPlayersByDefaultGroup>>[number];
+
+export function CreateUserForm({ players }: { players: PlayerOption[] }) {
   const [state, formAction, isPending] = useActionState(createUserAction, initialState);
 
   return (
@@ -56,6 +61,21 @@ export function CreateUserForm() {
         </select>
       </div>
 
+      <div className="grid gap-2">
+        <label htmlFor="playerId" className="text-sm font-medium text-neutral-200">
+          Player vinculado
+        </label>
+        <select id="playerId" name="playerId" defaultValue="" className="h-10 rounded-md border border-white/10 bg-neutral-950 px-3 text-sm text-white">
+          <option value="">Nenhum player</option>
+          {players.map((player) => (
+            <option key={player.id} value={player.id}>
+              {player.name}{player.nickname ? ` (${player.nickname})` : ""}
+            </option>
+          ))}
+        </select>
+        {state.fieldErrors?.playerId ? <p className="text-xs text-red-300">{state.fieldErrors.playerId[0]}</p> : null}
+      </div>
+
       <input type="hidden" name="active" value="true" />
 
       <fieldset className="grid gap-3">
@@ -63,7 +83,13 @@ export function CreateUserForm() {
         <div className="grid gap-2">
           {ALL_PERMISSIONS.map((permission) => (
             <label key={permission} className="flex items-center gap-3 rounded-md border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-neutral-300">
-              <input type="checkbox" name="permissions" value={permission} className="size-4 accent-emerald-400" />
+              <input
+                type="checkbox"
+                name="permissions"
+                value={permission}
+                defaultChecked={defaultPermissionValues.has(permission)}
+                className="size-4 accent-emerald-400"
+              />
               {permissionLabels[permission]}
             </label>
           ))}

@@ -29,6 +29,7 @@ export async function getCurrentUser() {
     name: user.name,
     email: user.email,
     role: user.role,
+    playerId: user.playerId,
     permissions: user.permissions.map((item) => item.permission),
   };
 }

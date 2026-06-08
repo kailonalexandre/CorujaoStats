@@ -1,4 +1,4 @@
-import type { UserPermissionType } from "@prisma/client";
+import type { UserPermissionType, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import type { UserInput } from "@/lib/validations/auth";
@@ -7,6 +7,7 @@ export async function getUsers() {
   return prisma.user.findMany({
     orderBy: [{ role: "asc" }, { name: "asc" }],
     include: {
+      player: true,
       permissions: {
         orderBy: { permission: "asc" },
       },
@@ -28,10 +29,21 @@ export async function createUser(input: UserInput) {
       email: input.email.toLowerCase(),
       passwordHash: await hashPassword(input.password),
       role: input.role,
+      playerId: input.playerId,
       active: input.active,
       permissions: {
         create: input.permissions.map((permission) => ({ permission })),
       },
+    },
+  });
+}
+
+export async function updateUserAccess(id: string, role: UserRole, playerId: string | null) {
+  return prisma.user.update({
+    where: { id },
+    data: {
+      role,
+      playerId,
     },
   });
 }
