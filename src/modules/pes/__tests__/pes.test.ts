@@ -76,14 +76,14 @@ function state(groups: PesGroup[], matches: PesMatch[], useRepechage = false): P
   };
 }
 
-function qualified(indexes: number[], groupLetters?: string[]): PesQualifiedPlayer[] {
+function qualified(indexes: number[], groupLetters?: string[], positions?: number[]): PesQualifiedPlayer[] {
   return indexes.map((index, listIndex) => ({
     playerId: `player-${index}`,
     playerName: `Player ${index}`,
     photoUrl: `/players/${index}.jpg`,
     teamName: `Team ${index}`,
     groupLetter: groupLetters?.[listIndex] ?? String.fromCharCode(65 + listIndex),
-    position: 1,
+    position: positions?.[listIndex] ?? 1,
   }));
 }
 
@@ -302,6 +302,17 @@ describe("PES logic", () => {
     expect(matches).toHaveLength(2);
     expect(matches.every((match) => match.stage === "final")).toBe(true);
     expect(matches.every((match) => match.round === 1)).toBe(true);
+  });
+
+  it("13b. cruza semifinais entre primeiro e segundo de grupos opostos", () => {
+    const matches = generatePesMainBracket(
+      qualified([1, 2, 3, 4], ["A", "A", "B", "B"], [1, 2, 1, 2]),
+    );
+
+    expect(matches.map((match) => [match.player1Id, match.player2Id])).toEqual([
+      ["player-1", "player-4"],
+      ["player-3", "player-2"],
+    ]);
   });
 
   it("14. gera BYE quando a quantidade de jogadores e impar", () => {

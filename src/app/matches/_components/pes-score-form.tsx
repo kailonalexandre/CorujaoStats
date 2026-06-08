@@ -58,28 +58,30 @@ export function PesScoreForm({ sessionId, match }: PesScoreFormProps) {
       </div>
 
       {isKnockout ? (
-        <div className="grid grid-cols-2 gap-2 rounded-md border border-amber-400/20 bg-amber-500/[0.04] p-2">
-          <label className="grid gap-1 text-xs text-neutral-400">
+        <div className="grid min-w-0 grid-cols-1 gap-2 rounded-md border border-amber-400/20 bg-amber-500/[0.04] p-2 sm:grid-cols-2">
+          <label className="grid min-w-0 gap-1 text-xs text-neutral-400">
             Penalti 1
             <input
               name="pen1"
               type="number"
+              inputMode="numeric"
               min={0}
               step={1}
               defaultValue={match.pen1 ?? ""}
-              className="h-9 rounded-md border border-white/10 bg-neutral-950 px-2 text-center text-sm font-semibold text-white outline-none transition focus:border-amber-400"
+              className="h-9 w-full min-w-0 rounded-md border border-white/10 bg-neutral-950 px-2 text-center text-sm font-semibold text-white outline-none transition focus:border-amber-400"
             />
           </label>
-          <label className="grid gap-1 text-xs text-neutral-400">
+          <label className="grid min-w-0 gap-1 text-xs text-neutral-400">
             Penalti 2
             <input
               name="pen2"
               type="number"
+              inputMode="numeric"
               min={0}
               step={1}
               defaultValue={match.pen2 ?? ""}
               disabled={match.player2 === "BYE"}
-              className="h-9 rounded-md border border-white/10 bg-neutral-950 px-2 text-center text-sm font-semibold text-white outline-none transition disabled:opacity-50 focus:border-amber-400"
+              className="h-9 w-full min-w-0 rounded-md border border-white/10 bg-neutral-950 px-2 text-center text-sm font-semibold text-white outline-none transition disabled:opacity-50 focus:border-amber-400"
             />
           </label>
         </div>

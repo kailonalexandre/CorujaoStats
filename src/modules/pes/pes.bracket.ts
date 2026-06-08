@@ -121,8 +121,27 @@ function findOpponentIndex(players: PesQualifiedPlayer[], player: PesQualifiedPl
   return differentGroupIndex === -1 ? 0 : differentGroupIndex;
 }
 
+function getTwoGroupSemifinalOrder(players: PesQualifiedPlayer[]): PesQualifiedPlayer[] | null {
+  if (players.length !== 4) return null;
+
+  const groups = Array.from(new Set(players.map((player) => player.groupLetter))).sort((first, second) =>
+    first.localeCompare(second),
+  );
+  if (groups.length !== 2) return null;
+
+  const [groupA, groupB] = groups;
+  const firstGroupWinner = players.find((player) => player.groupLetter === groupA && player.position === 1);
+  const firstGroupRunnerUp = players.find((player) => player.groupLetter === groupA && player.position === 2);
+  const secondGroupWinner = players.find((player) => player.groupLetter === groupB && player.position === 1);
+  const secondGroupRunnerUp = players.find((player) => player.groupLetter === groupB && player.position === 2);
+
+  if (!firstGroupWinner || !firstGroupRunnerUp || !secondGroupWinner || !secondGroupRunnerUp) return null;
+
+  return [firstGroupWinner, secondGroupRunnerUp, secondGroupWinner, firstGroupRunnerUp];
+}
+
 export function generatePesMainBracket(qualifiedPlayers: PesQualifiedPlayer[]): PesMatch[] {
-  const remainingPlayers = [...qualifiedPlayers];
+  const remainingPlayers = [...(getTwoGroupSemifinalOrder(qualifiedPlayers) ?? qualifiedPlayers)];
   const matches: PesMatch[] = [];
 
   while (remainingPlayers.length > 0) {

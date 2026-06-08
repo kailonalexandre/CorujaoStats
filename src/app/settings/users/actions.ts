@@ -38,13 +38,10 @@ export async function createUserAction(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
-    role: formData.get("role"),
+    role: "user",
     playerId: formData.get("playerId"),
     active: formData.get("active") === "true",
-    permissions:
-      formData.get("role") === "user" && formData.getAll("permissions").length === 0
-        ? [...BASIC_USER_PERMISSIONS]
-        : parsePermissions(formData),
+    permissions: [...BASIC_USER_PERMISSIONS],
   });
 
   if (!parsed.success) {

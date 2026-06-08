@@ -3,15 +3,13 @@
 import { useActionState } from "react";
 import { UserPlus } from "lucide-react";
 import { createUserAction, type UserFormState } from "@/app/settings/users/actions";
-import { ALL_PERMISSIONS, permissionLabels } from "@/lib/auth/permissions";
+import { BASIC_USER_PERMISSIONS, permissionLabels } from "@/lib/auth/permissions";
 import type { getPlayersByDefaultGroup } from "@/lib/db/players";
 
 const initialState: UserFormState = {
   status: "idle",
   message: "",
 };
-
-const defaultPermissionValues = new Set(["manage_raffles", "manage_matches", "view_stats"]);
 
 type PlayerOption = Awaited<ReturnType<typeof getPlayersByDefaultGroup>>[number];
 
@@ -52,13 +50,13 @@ export function CreateUserForm({ players }: { players: PlayerOption[] }) {
       </div>
 
       <div className="grid gap-2">
-        <label htmlFor="role" className="text-sm font-medium text-neutral-200">
+        <span className="text-sm font-medium text-neutral-200">
           Perfil
-        </label>
-        <select id="role" name="role" defaultValue="user" className="h-10 rounded-md border border-white/10 bg-neutral-950 px-3 text-sm text-white">
-          <option value="user">Usuario</option>
-          <option value="admin">Administrador</option>
-        </select>
+        </span>
+        <input type="hidden" name="role" value="user" />
+        <div className="flex min-h-10 items-center rounded-md border border-white/10 bg-neutral-950 px-3 text-sm text-neutral-300">
+          Usuario
+        </div>
       </div>
 
       <div className="grid gap-2">
@@ -79,16 +77,17 @@ export function CreateUserForm({ players }: { players: PlayerOption[] }) {
       <input type="hidden" name="active" value="true" />
 
       <fieldset className="grid gap-3">
-        <legend className="text-sm font-medium text-neutral-200">Permissoes</legend>
+        <legend className="text-sm font-medium text-neutral-200">Permissoes iniciais</legend>
         <div className="grid gap-2">
-          {ALL_PERMISSIONS.map((permission) => (
+          {BASIC_USER_PERMISSIONS.map((permission) => (
             <label key={permission} className="flex items-center gap-3 rounded-md border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-neutral-300">
               <input
                 type="checkbox"
                 name="permissions"
                 value={permission}
-                defaultChecked={defaultPermissionValues.has(permission)}
-                className="size-4 accent-emerald-400"
+                defaultChecked
+                disabled
+                className="size-4 accent-emerald-400 disabled:opacity-80"
               />
               {permissionLabels[permission]}
             </label>
